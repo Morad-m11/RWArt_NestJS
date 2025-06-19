@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from 'src/core/auth.guard';
 
 describe('UserController', () => {
    let controller: UserController;
