@@ -14,7 +14,7 @@ export type UserJwt = {
 };
 
 @Injectable()
-export class UsersService {
+export class UserService {
    private readonly users: StoredUser[] = [
       {
          userId: 1,

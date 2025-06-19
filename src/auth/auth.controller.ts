@@ -1,18 +1,7 @@
-import {
-   Body,
-   Controller,
-   Get,
-   HttpCode,
-   HttpStatus,
-   Post,
-   Res,
-   UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { AuthGuard } from './auth.guard';
+import { StoredUser } from 'src/user/user.service';
 import { AuthService } from './auth.service';
-import { CurrentUser } from './user-decorator';
-import { StoredUser, UserJwt } from 'src/users/users.service';
 
 @Controller('auth')
 export class AuthController {
@@ -32,11 +21,5 @@ export class AuthController {
       });
 
       return { message: 'success' };
-   }
-
-   @UseGuards(AuthGuard)
-   @Get('profile')
-   getProfile(@CurrentUser() user: UserJwt): UserJwt {
-      return user;
    }
 }

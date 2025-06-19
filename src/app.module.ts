@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
+import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { ImageModule } from './image/image.module';
 
@@ -10,7 +10,7 @@ import { ImageModule } from './image/image.module';
    imports: [
       ConfigModule.forRoot({ isGlobal: true }),
       AuthModule,
-      UsersModule,
+      UserModule,
       ImageModule,
    ],
    controllers: [AppController],
