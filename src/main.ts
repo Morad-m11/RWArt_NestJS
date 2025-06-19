@@ -1,14 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap(): Promise<void> {
    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-      cors: true,
+      cors: {
+         credentials: true,
+         origin: 'http://localhost:4200',
+      },
       abortOnError: false,
    });
 
-   await app.listen(process.env.PORT ?? 3000);
+   app.use(cookieParser());
+
+   await app.listen(process.env['PORT'] ?? 3000);
 }
 
 bootstrap().catch((err) => {
