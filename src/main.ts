@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { loggerMiddleware } from './core/logging/logging.middleware';
 
 async function bootstrap(): Promise<void> {
    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -13,6 +14,7 @@ async function bootstrap(): Promise<void> {
    });
 
    app.use(cookieParser());
+   app.use(loggerMiddleware);
 
    await app.listen(process.env['PORT'] ?? 3000);
 }

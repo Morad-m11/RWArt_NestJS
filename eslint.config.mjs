@@ -31,4 +31,10 @@ export default tseslint.config(
          '@typescript-eslint/no-unsafe-argument': 'warn',
       },
    },
+   {
+      files: ['**/*.test.{ts, js}', '**/*.spec.{ts, js}'],
+      rules: {
+         '@typescript-eslint/unbound-method': 'off',
+      },
+   },
 );
