@@ -1,7 +1,25 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import {
+   Body,
+   Controller,
+   Get,
+   HttpCode,
+   HttpStatus,
+   Post,
+   Res,
+   UseGuards,
+} from '@nestjs/common';
 import { Response } from 'express';
+import { AuthGuard } from 'src/core/auth.guard';
+import { User } from 'src/user/user-decorator';
 import { StoredUser } from 'src/user/user.service';
 import { AuthService } from './auth.service';
+
+export interface UserJwt {
+   username: string;
+   sub: number;
+   iat: number;
+   exp: number;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -9,11 +27,13 @@ export class AuthController {
 
    @HttpCode(HttpStatus.OK)
    @Post('login')
-   async signIn(
-      @Body() signInDto: StoredUser,
+   signIn(
+      @Body() credentials: StoredUser,
       @Res({ passthrough: true }) res: Response,
-   ): Promise<{ message: string }> {
-      const token = await this.authService.signIn(signInDto.username, signInDto.password);
+   ): { message: string } {
+      const { username, password } = credentials;
+      const token = this.authService.signIn(username, password);
+
       res.cookie('access_token', token, {
          httpOnly: true,
          sameSite: 'lax',
@@ -21,5 +41,12 @@ export class AuthController {
       });
 
       return { message: 'success' };
+   }
+
+   @HttpCode(HttpStatus.OK)
+   @UseGuards(AuthGuard)
+   @Get('me')
+   me(@User() user: UserJwt): UserJwt {
+      return user;
    }
 }

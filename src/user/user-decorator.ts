@@ -1,7 +1,7 @@
 // src/auth/decorators/user.decorator.ts
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
-import { UserJwt } from 'src/user/user.service';
+import { UserJwt } from 'src/auth/auth.controller';
 
 export type RequestWithUser = Request & { user: UserJwt };
 

@@ -6,13 +6,6 @@ export type StoredUser = {
    password: string;
 };
 
-export type UserJwt = {
-   sub: 1;
-   username: 'john';
-   iat: 1750331142;
-   exp: 1750332042;
-};
-
 @Injectable()
 export class UserService {
    private readonly users: StoredUser[] = [
