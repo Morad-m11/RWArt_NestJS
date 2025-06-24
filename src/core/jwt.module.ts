@@ -5,13 +5,12 @@ export const RegisteredJwtModule = JwtModule.registerAsync({
    global: true,
    inject: [ConfigService],
    useFactory: (config: ConfigService): JwtModuleOptions => {
-      const secret = config.get<string>('JWT_SECRET');
-      const expiresIn = config.get<string>('JWT_EXPIRATION') || '15m';
+      const secret = config.getOrThrow<string>('JWT_ACCESS_SECRET');
+      const expiresIn = config.getOrThrow<string>('JWT_ACCESS_EXPIRATION');
 
-      if (!secret) {
-         throw new Error('JWT_SECRET is not defined in the environment variables');
-      }
-
-      return { secret, signOptions: { expiresIn } };
+      return {
+         secret,
+         signOptions: { expiresIn },
+      };
    },
 });

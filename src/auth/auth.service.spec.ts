@@ -1,14 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
-import { UserService } from 'src/user/user.service';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
+import { provideEmpty, provideValue } from 'src/core/provide';
+import { UserService } from 'src/user/user.service';
+import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
    let service: AuthService;
 
    beforeEach(async () => {
       const module: TestingModule = await Test.createTestingModule({
-         providers: [UserService, AuthService, { provide: JwtService, useValue: {} }],
+         providers: [
+            AuthService,
+            ...provideEmpty(JwtService, UserService, ConfigService),
+            provideValue(ConfigService, { getOrThrow: jest.fn() }),
+         ],
       }).compile();
 
       service = module.get(AuthService);

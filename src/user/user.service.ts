@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 export type StoredUser = {
-   userId: number;
+   id: number;
    username: string;
    password: string;
 };
@@ -10,12 +10,12 @@ export type StoredUser = {
 export class UserService {
    private readonly users: StoredUser[] = [
       {
-         userId: 1,
+         id: 1,
          username: 'john',
          password: 'changeme',
       },
       {
-         userId: 2,
+         id: 2,
          username: 'maria',
          password: 'guess',
       },

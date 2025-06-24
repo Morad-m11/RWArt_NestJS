@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { RequestWithUser } from '../user/user-decorator';
 import { UserJwt } from 'src/auth/auth.controller';
+import { RequestWithUser } from '../user/user-decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -15,14 +15,14 @@ export class AuthGuard implements CanActivate {
 
    async canActivate(context: ExecutionContext): Promise<boolean> {
       const request = context.switchToHttp().getRequest<RequestWithUser>();
-      const token = this.extractTokenFromHeader(request);
+      const access_token = this.extractAccessTokenFromHeader(request);
 
-      if (!token) {
+      if (!access_token) {
          throw new UnauthorizedException();
       }
 
       const userPayload = await this.jwtService
-         .verifyAsync<UserJwt>(token)
+         .verifyAsync<UserJwt>(access_token)
          .catch((err: unknown) => {
             throw new UnauthorizedException(err);
          });
@@ -34,7 +34,9 @@ export class AuthGuard implements CanActivate {
       return true;
    }
 
-   private extractTokenFromHeader(request: Request): string | undefined {
-      return request.cookies['access_token'] as string;
+   private extractAccessTokenFromHeader(request: Request): string | undefined {
+      const authheader = request.headers.authorization;
+      const [type, token] = authheader?.split(' ') ?? [];
+      return type === 'Bearer' ? token : undefined;
    }
 }

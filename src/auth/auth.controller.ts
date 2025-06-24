@@ -1,14 +1,16 @@
 import {
    Body,
    Controller,
+   ForbiddenException,
    Get,
    HttpCode,
    HttpStatus,
    Post,
+   Req,
    Res,
    UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthGuard } from 'src/core/auth.guard';
 import { User } from 'src/user/user-decorator';
 import { StoredUser } from 'src/user/user.service';
@@ -30,23 +32,54 @@ export class AuthController {
    signIn(
       @Body() credentials: StoredUser,
       @Res({ passthrough: true }) res: Response,
-   ): { message: string } {
+   ): { accessToken: string } {
       const { username, password } = credentials;
-      const token = this.authService.signIn(username, password);
+      const { accessToken, refreshToken } = this.authService.signIn(username, password);
 
-      res.cookie('access_token', token, {
+      res.cookie('refresh_token', refreshToken, {
          httpOnly: true,
-         sameSite: 'lax',
+         sameSite: 'strict',
          secure: false,
+         path: '/auth/refresh',
       });
 
-      return { message: 'success' };
+      return { accessToken };
+   }
+
+   @HttpCode(HttpStatus.OK)
+   @Post('refresh')
+   refreshToken(
+      @Req() req: Request,
+      @Res({ passthrough: true }) res: Response,
+   ): {
+      accessToken: string;
+   } {
+      const refreshToken = req.cookies['refresh_token'] as string;
+
+      if (!refreshToken) {
+         throw new ForbiddenException('Refresh token is missing');
+      }
+
+      try {
+         const { accessToken } = this.authService.refresh(refreshToken);
+
+         res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+            path: '/auth/refresh',
+         });
+
+         return { accessToken };
+      } catch (error) {
+         throw new ForbiddenException(error);
+      }
    }
 
    @HttpCode(HttpStatus.OK)
    @UseGuards(AuthGuard)
-   @Get('me')
-   me(@User() user: UserJwt): UserJwt {
+   @Get('profile')
+   profile(@User() user: UserJwt): UserJwt {
       return user;
    }
 }
