@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/core/prisma.service';
 
 export type StoredUser = {
    id: number;
@@ -8,6 +9,8 @@ export type StoredUser = {
 
 @Injectable()
 export class UserService {
+   constructor(private prisma: PrismaService) {}
+
    private readonly users: StoredUser[] = [
       {
          id: 1,
