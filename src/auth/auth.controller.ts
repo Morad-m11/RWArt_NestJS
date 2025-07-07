@@ -2,26 +2,20 @@ import {
    Body,
    Controller,
    ForbiddenException,
-   Get,
    HttpCode,
    HttpStatus,
    Post,
    Req,
    Res,
-   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { AuthGuard } from 'src/core/auth.guard';
-import { User } from 'src/user/user-decorator';
-import { StoredUser } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 
-export interface UserJwt {
+export type AuthRequest = {
+   id: number;
    username: string;
-   sub: number;
-   iat: number;
-   exp: number;
-}
+   password: string;
+};
 
 @Controller('auth')
 export class AuthController {
@@ -29,12 +23,15 @@ export class AuthController {
 
    @HttpCode(HttpStatus.OK)
    @Post('login')
-   signIn(
-      @Body() credentials: StoredUser,
+   async signIn(
+      @Body() credentials: AuthRequest,
       @Res({ passthrough: true }) res: Response,
-   ): { accessToken: string } {
+   ): Promise<{ accessToken: string }> {
       const { username, password } = credentials;
-      const { accessToken, refreshToken } = this.authService.signIn(username, password);
+      const { accessToken, refreshToken } = await this.authService.signIn(
+         username,
+         password,
+      );
 
       res.cookie('refresh_token', refreshToken, {
          httpOnly: true,
@@ -74,12 +71,5 @@ export class AuthController {
       } catch (error) {
          throw new ForbiddenException(error);
       }
-   }
-
-   @HttpCode(HttpStatus.OK)
-   @UseGuards(AuthGuard)
-   @Get('profile')
-   profile(@User() user: UserJwt): UserJwt {
-      return user;
    }
 }

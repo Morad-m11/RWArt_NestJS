@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserController } from './user.controller';
 import { AuthGuard } from 'src/core/auth.guard';
+import { provideValue } from 'src/core/provide';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
 
 describe('UserController', () => {
    let controller: UserController;
@@ -8,6 +10,7 @@ describe('UserController', () => {
    beforeEach(async () => {
       const module: TestingModule = await Test.createTestingModule({
          controllers: [UserController],
+         providers: [provideValue(UserService)],
       })
          .overrideGuard(AuthGuard)
          .useValue({})

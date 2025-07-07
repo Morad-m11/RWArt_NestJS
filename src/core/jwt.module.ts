@@ -1,6 +1,13 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 
+export interface JWTPayload {
+   username: string;
+   sub: number;
+   iat: number;
+   exp: number;
+}
+
 export const RegisteredJwtModule = JwtModule.registerAsync({
    global: true,
    inject: [ConfigService],

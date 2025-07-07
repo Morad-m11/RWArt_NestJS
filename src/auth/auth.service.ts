@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import bcrypt from 'bcrypt';
+import { JWTPayload } from 'src/core/jwt.module';
 import { UserService } from '../user/user.service';
-import { UserJwt } from './auth.controller';
 
 interface JWTTokenResponse {
    accessToken: string;
@@ -23,25 +24,29 @@ export class AuthService {
       this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXPIRATION');
    }
 
-   signIn(username: string, pass: string): JWTTokenResponse {
-      const user = this.userService.findOne(username);
+   async signIn(username: string, password: string): Promise<JWTTokenResponse> {
+      const user = await this.userService.findOne(username);
 
-      if (user?.password !== pass) {
-         throw new UnauthorizedException();
+      if (!user) {
+         throw new UnauthorizedException('User does not exist');
       }
 
-      const tokens = this.signTokens(user.id, user.username);
-      return tokens;
+      const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+      if (!passwordMatches) {
+         throw new UnauthorizedException('Password does not match');
+      }
+
+      return this.createTokens(user.id, user.name);
    }
 
    refresh(refreshToken: string): JWTTokenResponse {
       const secret = this.refreshSecret;
-      const user = this.jwtService.verify<UserJwt>(refreshToken, { secret });
-      const tokens = this.signTokens(user.sub, user.username);
-      return tokens;
+      const user = this.jwtService.verify<JWTPayload>(refreshToken, { secret });
+
+      return this.createTokens(user.sub, user.username);
    }
 
-   private signTokens(userId: number, username: string): JWTTokenResponse {
+   private createTokens(userId: number, username: string): JWTTokenResponse {
       const secret = this.refreshSecret;
       const expiresIn = this.refreshExpiration;
 
