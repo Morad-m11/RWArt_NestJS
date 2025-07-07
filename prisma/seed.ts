@@ -4,33 +4,33 @@ import { PrismaClient, User } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-   const johnData: User = {
+   const john: User = {
       id: 1,
       email: 'john@prisma.io',
       name: 'Johnny',
       passwordHash: bcrypt.hashSync('changeme', 10),
    };
 
-   const mariaData: User = {
+   const maria: User = {
       id: 2,
       email: 'maria@prisma.io',
       name: 'Maria',
       passwordHash: bcrypt.hashSync('guess', 10),
    };
 
-   const john = await prisma.user.upsert({
-      where: { id: johnData.id },
-      update: johnData,
-      create: johnData,
+   await prisma.user.upsert({
+      where: { id: john.id },
+      update: john,
+      create: john,
    });
 
-   const maria = await prisma.user.upsert({
-      where: { id: mariaData.id },
-      update: mariaData,
-      create: mariaData,
+   await prisma.user.upsert({
+      where: { id: maria.id },
+      update: maria,
+      create: maria,
    });
 
-   console.log({ john, maria });
+   await prisma.refreshToken.deleteMany();
 }
 
 main()

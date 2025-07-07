@@ -24,7 +24,7 @@ model User {
 model RefreshToken {
   id            Int       @id @default(autoincrement())
   user          User      @relation(fields: [userId], references: [id])
-  userId        Int
+  userId        Int       @unique
   tokenHash     String    @unique
   createdByIp   String
   issuedAt      DateTime  @default(now())

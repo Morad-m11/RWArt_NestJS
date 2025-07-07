@@ -2,7 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
+import { Request } from 'express';
 import { JWTPayload } from 'src/core/jwt.module';
+import { PrismaService } from 'src/core/prisma.service';
 import { UserService } from '../user/user.service';
 
 interface JWTTokenResponse {
@@ -19,12 +21,17 @@ export class AuthService {
       private userService: UserService,
       private jwtService: JwtService,
       private config: ConfigService,
+      private prisma: PrismaService,
    ) {
       this.refreshSecret = this.config.getOrThrow<string>('JWT_REFRESH_SECRET');
       this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXPIRATION');
    }
 
-   async signIn(username: string, password: string): Promise<JWTTokenResponse> {
+   async signIn(
+      req: Request,
+      username: string,
+      password: string,
+   ): Promise<JWTTokenResponse> {
       const user = await this.userService.findOne(username);
 
       if (!user) {
@@ -36,7 +43,15 @@ export class AuthService {
          throw new UnauthorizedException('Password does not match');
       }
 
-      return this.createTokens(user.id, user.name);
+      const tokens = this.createTokens(user.id, user.name);
+
+      await this.upsertRefreshToken(
+         tokens.refreshToken,
+         req.ip ?? '[unknown IP]',
+         user.id,
+      );
+
+      return tokens;
    }
 
    refresh(refreshToken: string): JWTTokenResponse {
@@ -55,5 +70,27 @@ export class AuthService {
       const refreshToken = this.jwtService.sign(payload, { secret, expiresIn });
 
       return { accessToken, refreshToken };
+   }
+
+   private async upsertRefreshToken(refreshToken: string, ip: string, userId: number) {
+      const tokenHash = await bcrypt.hash(refreshToken, 10);
+      const expiration = this.jwtService.decode<JWTPayload>(refreshToken).exp * 1000;
+
+      await this.prisma.refreshToken.upsert({
+         create: {
+            tokenHash: tokenHash,
+            createdByIp: ip,
+            expiresAt: new Date(expiration),
+            userId,
+         },
+         update: {
+            tokenHash: tokenHash,
+            createdByIp: ip,
+            expiresAt: new Date(
+               this.jwtService.decode<JWTPayload>(refreshToken).exp * 1000,
+            ),
+         },
+         where: { userId },
+      });
    }
 }

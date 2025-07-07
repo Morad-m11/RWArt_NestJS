@@ -25,10 +25,12 @@ export class AuthController {
    @Post('login')
    async signIn(
       @Body() credentials: AuthRequest,
+      @Req() req: Request,
       @Res({ passthrough: true }) res: Response,
    ): Promise<{ accessToken: string }> {
       const { username, password } = credentials;
       const { accessToken, refreshToken } = await this.authService.signIn(
+         req,
          username,
          password,
       );
@@ -48,9 +50,7 @@ export class AuthController {
    refreshToken(
       @Req() req: Request,
       @Res({ passthrough: true }) res: Response,
-   ): {
-      accessToken: string;
-   } {
+   ): { accessToken: string } {
       const refreshToken = req.cookies['refresh_token'] as string;
 
       if (!refreshToken) {
