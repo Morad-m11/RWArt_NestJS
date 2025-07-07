@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { provideEmpty } from 'src/core/provide';
+import { provideEmpty } from 'src/core/utils/provide';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 

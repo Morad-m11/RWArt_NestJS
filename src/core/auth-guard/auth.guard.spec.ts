@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from './auth.guard';
 import { JwtService } from '@nestjs/jwt';
-import { provideValue } from 'src/core/provide';
+import { provideValue } from 'src/core/utils/provide';
 
 describe('AuthGuard', () => {
    let guard: AuthGuard;

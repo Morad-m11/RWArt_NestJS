@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthGuard } from 'src/core/auth.guard';
-import { provideValue } from 'src/core/provide';
+import { AuthGuard } from 'src/core/auth-guard/auth.guard';
+import { provideValue } from 'src/core/utils/provide';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 

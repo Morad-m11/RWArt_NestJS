@@ -1,8 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { provideEmpty, provideValue } from 'src/core/provide';
-import { UserService } from 'src/user/user.service';
+import { provideEmpty, provideValue } from 'src/core/utils/provide';
+import { UserService } from 'src/modules/user/user.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {

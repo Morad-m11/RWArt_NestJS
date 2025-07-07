@@ -1,7 +1,7 @@
 import { Controller, Get, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/auth.guard';
+import { AuthGuard } from 'src/core/auth-guard/auth.guard';
 import { JWTPayload } from 'src/core/jwt.module';
-import { User } from './user-decorator';
+import { User } from '../../core/utils/user-decorator';
 import { UserService } from './user.service';
 
 interface UserResponse {
