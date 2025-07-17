@@ -3,10 +3,10 @@ import { ImageResponse, ImageService } from './image.service';
 
 @Controller('image')
 export class ImageController {
-   constructor(private imageService: ImageService) {}
+    constructor(private imageService: ImageService) {}
 
-   @Get(':index')
-   getImage(@Param('index') index: string): ImageResponse {
-      return this.imageService.getImage(+index);
-   }
+    @Get(':index')
+    getImage(@Param('index') index: string): ImageResponse {
+        return this.imageService.getImage(+index);
+    }
 }

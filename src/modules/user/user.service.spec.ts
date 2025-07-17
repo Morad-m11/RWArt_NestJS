@@ -3,17 +3,17 @@ import { UserService } from './user.service';
 import { PrismaService } from 'src/core/prisma.service';
 
 describe('UserService', () => {
-   let service: UserService;
+    let service: UserService;
 
-   beforeEach(async () => {
-      const module: TestingModule = await Test.createTestingModule({
-         providers: [UserService, PrismaService],
-      }).compile();
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [UserService, PrismaService],
+        }).compile();
 
-      service = module.get<UserService>(UserService);
-   });
+        service = module.get<UserService>(UserService);
+    });
 
-   it('should be defined', () => {
-      expect(service).toBeDefined();
-   });
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
 });

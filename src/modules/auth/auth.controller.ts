@@ -1,75 +1,85 @@
 import {
-   Body,
-   Controller,
-   ForbiddenException,
-   HttpCode,
-   HttpStatus,
-   Post,
-   Req,
-   Res,
+    Body,
+    Controller,
+    ForbiddenException,
+    HttpCode,
+    HttpStatus,
+    Post,
+    Req,
+    Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 export type AuthRequest = {
-   id: number;
-   username: string;
-   password: string;
+    id: number;
+    username: string;
+    password: string;
 };
 
 @Controller('auth')
 export class AuthController {
-   constructor(private authService: AuthService) {}
+    constructor(private authService: AuthService) {}
 
-   @HttpCode(HttpStatus.OK)
-   @Post('login')
-   async signIn(
-      @Body() credentials: AuthRequest,
-      @Req() req: Request,
-      @Res({ passthrough: true }) res: Response,
-   ): Promise<{ accessToken: string }> {
-      const { username, password } = credentials;
-      const { accessToken, refreshToken } = await this.authService.signIn(
-         req,
-         username,
-         password,
-      );
+    @HttpCode(HttpStatus.OK)
+    @Post('login')
+    async signIn(
+        @Body() credentials: AuthRequest,
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<{ accessToken: string }> {
+        const { username, password } = credentials;
+        const { accessToken, refreshToken } = await this.authService.signIn(
+            req,
+            username,
+            password,
+        );
 
-      res.cookie('refresh_token', refreshToken, {
-         httpOnly: true,
-         sameSite: 'strict',
-         secure: false,
-         path: '/auth/refresh',
-      });
-
-      return { accessToken };
-   }
-
-   @HttpCode(HttpStatus.OK)
-   @Post('refresh')
-   refreshToken(
-      @Req() req: Request,
-      @Res({ passthrough: true }) res: Response,
-   ): { accessToken: string } {
-      const refreshToken = req.cookies['refresh_token'] as string;
-
-      if (!refreshToken) {
-         throw new ForbiddenException('Refresh token is missing');
-      }
-
-      try {
-         const { accessToken } = this.authService.refresh(refreshToken);
-
-         res.cookie('refresh_token', refreshToken, {
+        res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             sameSite: 'strict',
             secure: false,
             path: '/auth/refresh',
-         });
+        });
 
-         return { accessToken };
-      } catch (error) {
-         throw new ForbiddenException(error);
-      }
-   }
+        return { accessToken };
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('refresh')
+    async refreshToken(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<{ accessToken: string }> {
+        const refreshToken = req.cookies['refresh_token'] as string;
+
+        if (!refreshToken) {
+            throw new ForbiddenException('Refresh token is missing');
+        }
+
+        try {
+            const { accessToken } = await this.authService.refreshToken(
+                req,
+                refreshToken,
+            );
+
+            res.cookie('refresh_token', refreshToken, {
+                httpOnly: true,
+                sameSite: 'strict',
+                secure: false,
+                path: '/auth/refresh',
+            });
+
+            return { accessToken };
+        } catch (error) {
+            res.clearCookie('refresh_token', {
+                httpOnly: true,
+                sameSite: 'strict',
+                secure: false,
+                path: '/auth/refresh',
+            });
+
+            throw new ForbiddenException(error);
+        }
+    }
 }

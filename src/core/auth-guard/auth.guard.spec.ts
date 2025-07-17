@@ -4,17 +4,17 @@ import { JwtService } from '@nestjs/jwt';
 import { provideValue } from 'src/core/utils/provide';
 
 describe('AuthGuard', () => {
-   let guard: AuthGuard;
+    let guard: AuthGuard;
 
-   beforeEach(async () => {
-      const module = await Test.createTestingModule({
-         providers: [AuthGuard, provideValue(JwtService)],
-      }).compile();
+    beforeEach(async () => {
+        const module = await Test.createTestingModule({
+            providers: [AuthGuard, provideValue(JwtService)],
+        }).compile();
 
-      guard = await module.resolve(AuthGuard);
-   });
+        guard = await module.resolve(AuthGuard);
+    });
 
-   it('should be defined', () => {
-      expect(guard).toBeDefined();
-   });
+    it('should be defined', () => {
+        expect(guard).toBeDefined();
+    });
 });
