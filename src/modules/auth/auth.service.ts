@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
@@ -29,11 +34,11 @@ export class AuthService {
     }
 
     async signIn(req: Request, username: string, password: string): Promise<JWTTokens> {
-        const user = await this.userService.findOne(username);
-
-        if (!user) {
-            throw new UnauthorizedException('User does not exist');
-        }
+        const user = await this.userService
+            .findByName(username)
+            .catch((error: NotFoundException) => {
+                throw new UnauthorizedException(error.message);
+            });
 
         const passwordMatches = await bcrypt.compare(password, user.passwordHash);
         if (!passwordMatches) {

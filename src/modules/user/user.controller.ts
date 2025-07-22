@@ -1,4 +1,4 @@
-import { Controller, Get, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/core/auth-guard/auth.guard';
 import { JWTPayload } from 'src/core/jwt.module';
 import { User } from '../../core/utils/user-decorator';
@@ -17,11 +17,7 @@ export class UserController {
     @UseGuards(AuthGuard)
     @Get('profile')
     async getProfile(@User() user: JWTPayload): Promise<UserResponse> {
-        const matchingUser = await this.userService.findOne(user.username);
-
-        if (!matchingUser) {
-            throw new UnauthorizedException('User not found');
-        }
+        const matchingUser = await this.userService.findById(user.sub);
 
         return {
             id: matchingUser.id,
