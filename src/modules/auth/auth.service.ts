@@ -47,6 +47,16 @@ export class AuthService {
         );
     }
 
+    async signOut(refreshToken: string): Promise<void> {
+        const user = this.jwtService.decode<JWTPayload>(refreshToken);
+        const userId = user.sub;
+
+        await this.prisma.refreshToken.update({
+            data: { revokedAt: new Date(), revokedReason: 'logged out' },
+            where: { userId },
+        });
+    }
+
     async refreshToken(req: Request, refreshToken: string): Promise<JWTTokens> {
         const jwt = this.jwtService.verify<JWTPayload>(refreshToken, {
             secret: this.refreshSecret,

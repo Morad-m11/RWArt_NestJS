@@ -18,7 +18,7 @@ export class AuthGuard implements CanActivate {
         const access_token = this.extractAccessTokenFromHeader(request);
 
         if (!access_token) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('Missing access token');
         }
 
         const userPayload = await this.jwtService

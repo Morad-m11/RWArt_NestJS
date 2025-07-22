@@ -11,11 +11,13 @@ import {
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
-export type AuthRequest = {
+interface AuthRequest {
     id: number;
     username: string;
     password: string;
-};
+}
+
+const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
 
 @Controller('auth')
 export class AuthController {
@@ -35,14 +37,27 @@ export class AuthController {
             password,
         );
 
-        res.cookie('refresh_token', refreshToken, {
+        res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
             httpOnly: true,
             sameSite: 'strict',
             secure: false,
-            path: '/auth/refresh',
+            path: '/auth',
         });
 
         return { accessToken };
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('logout')
+    async signOut(
+        @Req() req: Request,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<void> {
+        const refreshToken = this.extractRefreshToken(req);
+
+        await this.authService.signOut(refreshToken);
+
+        res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 
     @HttpCode(HttpStatus.OK)
@@ -51,11 +66,7 @@ export class AuthController {
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
     ): Promise<{ accessToken: string }> {
-        const refreshToken = req.cookies['refresh_token'] as string;
-
-        if (!refreshToken) {
-            throw new ForbiddenException('Refresh token is missing');
-        }
+        const refreshToken = this.extractRefreshToken(req);
 
         try {
             const { accessToken } = await this.authService.refreshToken(
@@ -63,23 +74,33 @@ export class AuthController {
                 refreshToken,
             );
 
-            res.cookie('refresh_token', refreshToken, {
+            res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
                 httpOnly: true,
                 sameSite: 'strict',
                 secure: false,
-                path: '/auth/refresh',
+                path: '/auth',
             });
 
             return { accessToken };
         } catch (error) {
-            res.clearCookie('refresh_token', {
+            res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
                 httpOnly: true,
                 sameSite: 'strict',
                 secure: false,
-                path: '/auth/refresh',
+                path: '/auth',
             });
 
             throw new ForbiddenException(error);
         }
+    }
+
+    private extractRefreshToken(req: Request): string {
+        const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY] as string;
+
+        if (!refreshToken) {
+            throw new ForbiddenException('Refresh token is missing');
+        }
+
+        return refreshToken;
     }
 }

@@ -2,9 +2,15 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 
 export interface JWTPayload {
+    /** user id */
     sub: number;
+
     username: string;
+
+    /** issued at */
     iat: number;
+
+    /** expires at */
     exp: number;
 }
 
