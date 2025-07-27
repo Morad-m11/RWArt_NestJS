@@ -18,8 +18,8 @@ export const RegisteredJwtModule = JwtModule.registerAsync({
     global: true,
     inject: [ConfigService],
     useFactory: (config: ConfigService): JwtModuleOptions => {
-        const secret = config.getOrThrow<string>('JWT_ACCESS_SECRET');
-        const expiresIn = config.getOrThrow<string>('JWT_ACCESS_EXPIRATION');
+        const secret = config.getOrThrow<string>('JWT_SECRET');
+        const expiresIn = config.getOrThrow<string>('JWT_EXP');
 
         return {
             secret,

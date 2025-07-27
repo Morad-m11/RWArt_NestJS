@@ -25,7 +25,7 @@ export class AuthService {
         private prisma: PrismaService,
     ) {
         this.refreshSecret = this.config.getOrThrow<string>('JWT_REFRESH_SECRET');
-        this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXPIRATION');
+        this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXP');
     }
 
     async validateUser(name: string, pass: string): Promise<User | null> {
