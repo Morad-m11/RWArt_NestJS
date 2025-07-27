@@ -1,7 +1,6 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AuthGuard } from 'src/core/auth-guard/auth.guard';
-import { JWTPayload } from 'src/core/jwt.module';
-import { User } from '../../core/utils/user-decorator';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
+import { RequestWithJwt } from '../../core/utils/user-decorator';
 import { UserService } from './user.service';
 
 interface UserResponse {
@@ -14,10 +13,10 @@ interface UserResponse {
 export class UserController {
     constructor(private userService: UserService) {}
 
-    @UseGuards(AuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Get('profile')
-    async getProfile(@User() user: JWTPayload): Promise<UserResponse> {
-        const matchingUser = await this.userService.findById(user.sub);
+    async getProfile(@Req() req: RequestWithJwt): Promise<UserResponse> {
+        const matchingUser = await this.userService.findById(req.user.userId);
 
         return {
             id: matchingUser.id,

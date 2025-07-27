@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthGuard } from 'src/core/auth-guard/auth.guard';
+import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { provideValue } from 'src/core/utils/provide';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -12,7 +12,7 @@ describe('UserController', () => {
             controllers: [UserController],
             providers: [provideValue(UserService)],
         })
-            .overrideGuard(AuthGuard)
+            .overrideGuard(JwtAuthGuard)
             .useValue({})
             .compile();
 

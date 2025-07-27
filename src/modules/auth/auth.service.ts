@@ -1,15 +1,10 @@
-import {
-    ForbiddenException,
-    Injectable,
-    NotFoundException,
-    UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
-import { JWTPayload } from 'src/core/jwt.module';
+import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
 import { PrismaService } from 'src/core/prisma.service';
 import { UserService } from '../user/user.service';
 
@@ -33,23 +28,14 @@ export class AuthService {
         this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXPIRATION');
     }
 
-    async signIn(req: Request, username: string, password: string): Promise<JWTTokens> {
-        const user = await this.userService
-            .findByName(username)
-            .catch((error: NotFoundException) => {
-                throw new UnauthorizedException(error.message);
-            });
+    async validateUser(name: string, pass: string): Promise<User | null> {
+        const user = await this.userService.findByName(name).catch(() => null);
 
-        const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-        if (!passwordMatches) {
-            throw new UnauthorizedException('Password does not match');
+        if (!user || !(await bcrypt.compare(pass, user.passwordHash))) {
+            return null;
         }
 
-        return await this.generateAndStoreTokens(
-            user.id,
-            user.name,
-            req.ip ?? '[unknown IP]',
-        );
+        return user;
     }
 
     async signOut(refreshToken: string): Promise<void> {
@@ -89,7 +75,7 @@ export class AuthService {
         );
     }
 
-    private async generateAndStoreTokens(
+    async generateAndStoreTokens(
         userId: number,
         username: string,
         createdByIp: string,

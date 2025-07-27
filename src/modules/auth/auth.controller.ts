@@ -1,5 +1,4 @@
 import {
-    Body,
     Controller,
     ForbiddenException,
     HttpCode,
@@ -7,15 +6,12 @@ import {
     Post,
     Req,
     Res,
+    UseGuards,
 } from '@nestjs/common';
+import { User } from '@prisma/client';
 import { Request, Response } from 'express';
+import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { AuthService } from './auth.service';
-
-interface AuthRequest {
-    id: number;
-    username: string;
-    password: string;
-}
 
 const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
 
@@ -23,19 +19,19 @@ const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
 export class AuthController {
     constructor(private authService: AuthService) {}
 
+    @UseGuards(LocalAuthGuard)
     @HttpCode(HttpStatus.OK)
     @Post('login')
     async signIn(
-        @Body() credentials: AuthRequest,
-        @Req() req: Request,
+        @Req() req: Request & { user: User },
         @Res({ passthrough: true }) res: Response,
     ): Promise<{ accessToken: string }> {
-        const { username, password } = credentials;
-        const { accessToken, refreshToken } = await this.authService.signIn(
-            req,
-            username,
-            password,
-        );
+        const { accessToken, refreshToken } =
+            await this.authService.generateAndStoreTokens(
+                req.user.id,
+                req.user.name,
+                req.ip ?? '[unknown IP]',
+            );
 
         res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
             httpOnly: true,
