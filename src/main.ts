@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
@@ -16,7 +17,10 @@ async function bootstrap(): Promise<void> {
     app.use(cookieParser());
     app.use(loggerMiddleware);
 
-    await app.listen(process.env['PORT']!);
+    const configService = app.get(ConfigService);
+    const port = configService.getOrThrow<number>('PORT');
+
+    await app.listen(port);
 }
 
 bootstrap().catch((err) => {
