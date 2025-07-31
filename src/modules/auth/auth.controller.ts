@@ -1,4 +1,5 @@
 import {
+    Body,
     Controller,
     ForbiddenException,
     HttpCode,
@@ -8,16 +9,30 @@ import {
     Res,
     UseGuards,
 } from '@nestjs/common';
+import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
+import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
+import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
-import { RequestWithUser } from 'src/core/utils/user-decorator';
+import { RequestWithUser } from 'src/core/auth/local/local.strategy';
+import { HASH_SALT } from 'src/core/hash';
+import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 
 const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
 
+interface SignupRequest {
+    email: string;
+    username: string;
+    password: string;
+}
+
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(
+        private authService: AuthService,
+        private userService: UserService,
+    ) {}
 
     @UseGuards(LocalAuthGuard)
     @HttpCode(HttpStatus.OK)
@@ -44,15 +59,24 @@ export class AuthController {
     }
 
     @HttpCode(HttpStatus.OK)
+    @Post('signup')
+    async signUp(@Body() body: SignupRequest) {
+        await this.userService.create({
+            email: body.email,
+            name: body.username,
+            passwordHash: await bcrypt.hash(body.password, HASH_SALT),
+            createdAt: new Date(),
+        });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
     @Post('logout')
     async signOut(
-        @Req() req: Request,
+        @Req() req: RequestWithJwt,
         @Res({ passthrough: true }) res: Response,
     ): Promise<void> {
-        const refreshToken = this.extractRefreshToken(req);
-
-        await this.authService.signOut(refreshToken);
-
+        await this.authService.signOut(req.user.userId);
         res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 

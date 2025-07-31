@@ -1,5 +1,6 @@
 import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { HASH_SALT } from 'src/core/hash';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ async function main() {
         email: 'john@prisma.io',
         name: 'Johnny',
         createdAt: new Date(),
-        passwordHash: bcrypt.hashSync('changeme', 10),
+        passwordHash: bcrypt.hashSync('changeme', HASH_SALT),
     };
 
     const maria: User = {
@@ -17,7 +18,7 @@ async function main() {
         email: 'maria@prisma.io',
         name: 'Maria',
         createdAt: new Date(),
-        passwordHash: bcrypt.hashSync('guess', 10),
+        passwordHash: bcrypt.hashSync('guess', HASH_SALT),
     };
 
     await prisma.user.upsert({

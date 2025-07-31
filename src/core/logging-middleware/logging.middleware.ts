@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 export const logger = new Logger('HTTP');
 

@@ -5,6 +5,7 @@ import { Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
+import { HASH_SALT } from 'src/core/hash';
 import { PrismaService } from 'src/core/prisma.service';
 import { UserService } from '../user/user.service';
 
@@ -38,10 +39,7 @@ export class AuthService {
         return user;
     }
 
-    async signOut(refreshToken: string): Promise<void> {
-        const user = this.jwtService.decode<JWTPayload>(refreshToken);
-        const userId = user.sub;
-
+    async signOut(userId: number): Promise<void> {
         await this.prisma.refreshToken.update({
             data: { revokedAt: new Date(), revokedReason: 'logged out' },
             where: { userId },
@@ -86,7 +84,7 @@ export class AuthService {
         );
 
         await this.upsertRefreshToken({
-            tokenHash: await bcrypt.hash(refreshToken, 10),
+            tokenHash: await bcrypt.hash(refreshToken, HASH_SALT),
             issuedAt: new Date(tokenInfo.iat * 1000),
             expiresAt: new Date(tokenInfo.exp * 1000),
             createdByIp,

@@ -14,6 +14,13 @@ export interface JWTPayload {
     exp: number;
 }
 
+export type JWTDecoded = {
+    userId: number;
+    username: string;
+};
+
+export type RequestWithJwt = Request & { user: JWTDecoded };
+
 export const RegisteredJwtModule = JwtModule.registerAsync({
     global: true,
     inject: [ConfigService],
