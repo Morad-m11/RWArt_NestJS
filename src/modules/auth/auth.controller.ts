@@ -8,9 +8,9 @@ import {
     Res,
     UseGuards,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
 import { Request, Response } from 'express';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
+import { RequestWithUser } from 'src/core/utils/user-decorator';
 import { AuthService } from './auth.service';
 
 const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
@@ -23,7 +23,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('login')
     async signIn(
-        @Req() req: Request & { user: User },
+        @Req() req: RequestWithUser,
         @Res({ passthrough: true }) res: Response,
     ): Promise<{ accessToken: string }> {
         const { accessToken, refreshToken } =

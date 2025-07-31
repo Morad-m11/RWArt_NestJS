@@ -1,5 +1,5 @@
-import bcrypt from 'bcrypt';
 import { PrismaClient, User } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +8,7 @@ async function main() {
         id: 1,
         email: 'john@prisma.io',
         name: 'Johnny',
+        createdAt: new Date(),
         passwordHash: bcrypt.hashSync('changeme', 10),
     };
 
@@ -15,6 +16,7 @@ async function main() {
         id: 2,
         email: 'maria@prisma.io',
         name: 'Maria',
+        createdAt: new Date(),
         passwordHash: bcrypt.hashSync('guess', 10),
     };
 
