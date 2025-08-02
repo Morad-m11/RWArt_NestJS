@@ -7,5 +7,7 @@ export const ConfigValidationSchema = Joi.object({
     JWT_EXP: Joi.string().default('15m'),
     JWT_REFRESH_SECRET: Joi.string().required(),
     JWT_REFRESH_EXP: Joi.string().default('30d'),
-    DATABASE_URL: Joi.string().required(),
+    JWT_VERIFY_SECRET: Joi.string().required(),
+    JWT_VERIFY_EXP: Joi.string().default('10m'),
+    DATABASE_URL: Joi.string().required()
 });

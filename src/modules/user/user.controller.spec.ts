@@ -10,7 +10,7 @@ describe('UserController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [UserController],
-            providers: [provideValue(UserService)],
+            providers: [provideValue(UserService)]
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({})

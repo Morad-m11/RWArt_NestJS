@@ -1,10 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { MailService } from 'src/core/mail/mail.service';
+import { PrismaService } from 'src/core/prisma.service';
 import { provideEmpty, provideValue } from 'src/core/utils/provide';
 import { UserService } from 'src/modules/user/user.service';
 import { AuthService } from './auth.service';
-import { PrismaService } from 'src/core/prisma.service';
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -13,9 +14,9 @@ describe('AuthService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AuthService,
-                ...provideEmpty(JwtService, UserService, ConfigService, PrismaService),
-                provideValue(ConfigService, { getOrThrow: jest.fn() }),
-            ],
+                ...provideEmpty(JwtService, UserService, MailService, PrismaService),
+                provideValue(ConfigService, { getOrThrow: jest.fn() })
+            ]
         }).compile();
 
         service = module.get(AuthService);

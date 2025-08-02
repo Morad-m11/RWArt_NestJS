@@ -6,13 +6,22 @@ import { PrismaService } from 'src/core/prisma.service';
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
-    async create(user: Prisma.UserCreateInput) {
-        await this.prisma.user.create({ data: user });
+    async create(user: Prisma.UserCreateInput): Promise<Omit<User, 'passwordHash'>> {
+        const createdUser = await this.prisma.user.create({
+            data: user,
+            omit: { passwordHash: true }
+        });
+
+        return createdUser;
+    }
+
+    async update(id: User['id'], user: Prisma.UserUpdateInput) {
+        await this.prisma.user.update({ where: { id }, data: user });
     }
 
     async isUniqueUsername(name: string): Promise<boolean> {
         const count = await this.prisma.user.count({
-            where: { name: { equals: name, mode: 'insensitive' } },
+            where: { name: { equals: name, mode: 'insensitive' } }
         });
 
         return count === 0;
@@ -20,7 +29,7 @@ export class UserService {
 
     async isUniqueEmail(email: string): Promise<boolean> {
         const count = await this.prisma.user.count({
-            where: { email: { equals: email, mode: 'insensitive' } },
+            where: { email: { equals: email, mode: 'insensitive' } }
         });
 
         return count === 0;
@@ -28,7 +37,7 @@ export class UserService {
 
     async getByName(username: string): Promise<User> {
         const user = await this.prisma.user.findFirst({
-            where: { name: { equals: username, mode: 'insensitive' } },
+            where: { name: { equals: username, mode: 'insensitive' } }
         });
 
         if (!user) {

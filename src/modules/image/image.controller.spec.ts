@@ -8,7 +8,7 @@ describe('ImageController', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [ImageController],
-            providers: [ImageService],
+            providers: [ImageService]
         }).compile();
 
         controller = module.get<ImageController>(ImageController);

@@ -16,7 +16,7 @@ export class ImageService {
             id: index,
             title: `Image ${index}`,
             url: `Image ${index} URL`,
-            thumbnailUrl: `Image ${index} Thumbnail URL`,
+            thumbnailUrl: `Image ${index} Thumbnail URL`
         };
     }
 }

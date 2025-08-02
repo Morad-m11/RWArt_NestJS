@@ -8,7 +8,7 @@ describe('AuthGuard', () => {
 
     beforeEach(async () => {
         const module = await Test.createTestingModule({
-            providers: [JwtAuthGuard, provideValue(JwtService)],
+            providers: [JwtAuthGuard, provideValue(JwtService)]
         }).compile();
 
         guard = await module.resolve(JwtAuthGuard);

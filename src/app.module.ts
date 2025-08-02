@@ -5,10 +5,11 @@ import { RegisteredConfigModule } from './config/module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ImageModule } from './modules/image/image.module';
 import { UserModule } from './modules/user/user.module';
+import { MailService } from './core/mail/mail.service';
 
 @Module({
     imports: [RegisteredConfigModule, AuthModule, UserModule, ImageModule],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, MailService]
 })
 export class AppModule {}

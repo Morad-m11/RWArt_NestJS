@@ -14,12 +14,13 @@ generator client {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime
-  RefreshToken RefreshToken?
+  id             Int           @id @default(autoincrement())
+  email          String        @unique
+  name           String
+  passwordHash   String
+  createdAt      DateTime
+  email_verified Boolean       @default(false)
+  RefreshToken   RefreshToken?
 }
 
 model RefreshToken {

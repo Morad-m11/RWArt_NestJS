@@ -4,7 +4,7 @@ import {
     Get,
     Query,
     Req,
-    UseGuards,
+    UseGuards
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
@@ -23,7 +23,7 @@ export class UserController {
     @Get('check-unique')
     async checkUniqueProperties(
         @Query('username') username: string,
-        @Query('email') email: string,
+        @Query('email') email: string
     ): Promise<{ unique: boolean }> {
         if (username) {
             return { unique: await this.userService.isUniqueUsername(username) };
@@ -44,7 +44,7 @@ export class UserController {
         return {
             id: matchingUser.id,
             email: matchingUser.email,
-            username: matchingUser.name,
+            username: matchingUser.name
         };
     }
 }

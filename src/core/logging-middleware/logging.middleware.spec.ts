@@ -54,7 +54,7 @@ describe('LoggingMiddleware', () => {
 function createResponse(statusCode: number) {
     return {
         statusCode,
-        on: (event, listener) => listener(event),
+        on: (event, listener) => listener(event)
     } as Response;
 }
 

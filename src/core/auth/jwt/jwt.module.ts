@@ -30,7 +30,7 @@ export const RegisteredJwtModule = JwtModule.registerAsync({
 
         return {
             secret,
-            signOptions: { expiresIn },
+            signOptions: { expiresIn }
         };
-    },
+    }
 });
