@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/core/prisma.service';
 
@@ -7,12 +7,10 @@ export class UserService {
     constructor(private prisma: PrismaService) {}
 
     async create(user: Prisma.UserCreateInput): Promise<Omit<User, 'passwordHash'>> {
-        const createdUser = await this.prisma.user.create({
+        return await this.prisma.user.create({
             data: user,
             omit: { passwordHash: true }
         });
-
-        return createdUser;
     }
 
     async update(id: User['id'], user: Prisma.UserUpdateInput) {
@@ -35,25 +33,19 @@ export class UserService {
         return count === 0;
     }
 
-    async getByName(username: string): Promise<User> {
-        const user = await this.prisma.user.findFirst({
-            where: { name: { equals: username, mode: 'insensitive' } }
-        });
-
-        if (!user) {
-            throw new NotFoundException(`User with name ${username} not found`);
-        }
-
-        return user;
+    async getById(id: number): Promise<User> {
+        return await this.prisma.user.findUniqueOrThrow({ where: { id } });
     }
 
-    async getById(id: number): Promise<User> {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+    async getByName(username: string): Promise<User> {
+        return await this.prisma.user.findFirstOrThrow({
+            where: { name: { equals: username, mode: 'insensitive' } }
+        });
+    }
 
-        if (!user) {
-            throw new NotFoundException(`User with ID ${id} not found`);
-        }
-
-        return user;
+    async getByEmail(email: string): Promise<User> {
+        return await this.prisma.user.findFirstOrThrow({
+            where: { email: { equals: email, mode: 'insensitive' } }
+        });
     }
 }

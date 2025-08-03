@@ -14,7 +14,7 @@ describe('AuthService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AuthService,
-                ...provideEmpty(JwtService, UserService, MailService, PrismaService),
+                ...provideEmpty(JwtService, PrismaService, UserService, MailService),
                 provideValue(ConfigService, { getOrThrow: jest.fn() })
             ]
         }).compile();

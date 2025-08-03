@@ -2,8 +2,10 @@ import {
     Body,
     Controller,
     ForbiddenException,
+    Get,
     HttpCode,
     HttpStatus,
+    Param,
     Post,
     Req,
     Res,
@@ -68,11 +70,22 @@ export class AuthController {
         res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 
-    @HttpCode(HttpStatus.OK)
-    @Post('verify')
-    async verify(@Body('token') token: string) {
+    @Get('verify-account/:token')
+    async verify(@Param('token') token: string) {
         await this.authService.verify(token);
         return { valid: true };
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('forgot-password')
+    async recoverAccount(@Body('email') email: string) {
+        await this.authService.recoverAccount(email);
+    }
+
+    @HttpCode(HttpStatus.OK)
+    @Post('reset-password')
+    async resetPassword(@Body() body: { password: string; token: string }) {
+        await this.authService.resetPassword(body.password, body.token);
     }
 
     @HttpCode(HttpStatus.OK)

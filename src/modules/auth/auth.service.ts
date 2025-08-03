@@ -10,12 +10,24 @@ import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { Request } from 'express';
+import { Config } from 'src/config/validation-schema';
 import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
 import { HASH_SALT } from 'src/core/hash';
 import { MailService } from 'src/core/mail/mail.service';
 import { PrismaService } from 'src/core/prisma.service';
 import { UserService } from '../user/user.service';
 import { SignupRequest } from './auth.controller';
+
+interface SecretAndExpiry {
+    secret: string;
+    expiry: string;
+}
+
+interface JWTConfig {
+    refresh: SecretAndExpiry;
+    verify: SecretAndExpiry;
+    reset: SecretAndExpiry;
+}
 
 interface JWTTokens {
     accessToken: string;
@@ -24,30 +36,35 @@ interface JWTTokens {
 
 @Injectable()
 export class AuthService {
-    private readonly refreshSecret: string;
-    private readonly refreshExpiration: string;
-    private readonly verifySecret: string;
-    private readonly verifyExpiration: string;
+    private readonly jwtConfig: JWTConfig;
 
     constructor(
         private userService: UserService,
         private jwtService: JwtService,
-        private config: ConfigService,
         private prisma: PrismaService,
-        private mail: MailService
+        private mail: MailService,
+        config: ConfigService
     ) {
-        this.refreshSecret = this.config.getOrThrow<string>('JWT_REFRESH_SECRET');
-        this.refreshExpiration = this.config.getOrThrow<string>('JWT_REFRESH_EXP');
-        this.verifySecret = this.config.getOrThrow<string>('JWT_VERIFY_SECRET');
-        this.verifyExpiration = this.config.getOrThrow<string>('JWT_VERIFY_EXP');
+        this.jwtConfig = {
+            refresh: {
+                secret: config.getOrThrow(Config.JWT_REFRESH_SECRET),
+                expiry: config.getOrThrow(Config.JWT_REFRESH_EXP)
+            },
+            verify: {
+                secret: config.getOrThrow(Config.JWT_VERIFY_SECRET),
+                expiry: config.getOrThrow(Config.JWT_VERIFY_EXP)
+            },
+            reset: {
+                secret: config.getOrThrow(Config.JWT_RESET_SECRET),
+                expiry: config.getOrThrow(Config.JWT_RESET_EXP)
+            }
+        };
     }
 
     async validateUser(name: string, pass: string): Promise<User> {
-        const user = await this.userService.getByName(name).catch(() => null);
-
-        if (!user) {
+        const user = await this.userService.getByName(name).catch(() => {
             throw new UnauthorizedException();
-        }
+        });
 
         const passwordMatches = await bcrypt.compare(pass, user.passwordHash);
         if (!passwordMatches) {
@@ -76,10 +93,17 @@ export class AuthService {
 
         const verifyToken = await this.jwtService.signAsync(
             { sub: createdUser.id, username: createdUser.name },
-            { secret: this.verifySecret, expiresIn: this.verifyExpiration }
+            {
+                secret: this.jwtConfig.verify.secret,
+                expiresIn: this.jwtConfig.verify.expiry
+            }
         );
 
-        await this.mail.sendVerificationPrompt(createdUser.name, verifyToken);
+        await this.mail.sendVerificationPrompt(
+            createdUser.email,
+            createdUser.name,
+            verifyToken
+        );
     }
 
     async signOut(userId: number): Promise<void> {
@@ -91,7 +115,7 @@ export class AuthService {
 
     async verify(token: string): Promise<void> {
         const user = await this.jwtService
-            .verifyAsync<JWTPayload>(token, { secret: this.verifySecret })
+            .verifyAsync<JWTPayload>(token, { secret: this.jwtConfig.verify.secret })
             .catch((error: JsonWebTokenError) => {
                 if (error instanceof TokenExpiredError) {
                     throw new UnauthorizedException(error);
@@ -109,9 +133,37 @@ export class AuthService {
         await this.userService.update(user.sub, { email_verified: true });
     }
 
+    async recoverAccount(email: string): Promise<void> {
+        const user = await this.userService.getByEmail(email).catch(() => null);
+
+        if (!user) {
+            return;
+        }
+
+        const recoveryToken = await this.jwtService.signAsync(
+            { sub: user.id, username: user.name },
+            {
+                secret: this.jwtConfig.reset.secret,
+                expiresIn: this.jwtConfig.reset.expiry
+            }
+        );
+
+        await this.mail.sendAccountRecoveryPrompt(email, user.name, recoveryToken);
+    }
+
+    async resetPassword(password: string, token: string): Promise<void> {
+        const user = await this.jwtService.verifyAsync<JWTPayload>(token, {
+            secret: this.jwtConfig.reset.secret
+        });
+
+        await this.userService.update(user.sub, {
+            passwordHash: await bcrypt.hash(password, HASH_SALT)
+        });
+    }
+
     async refreshToken(req: Request, refreshToken: string): Promise<JWTTokens> {
-        const jwt = this.jwtService.verify<JWTPayload>(refreshToken, {
-            secret: this.refreshSecret
+        const jwt = await this.jwtService.verifyAsync<JWTPayload>(refreshToken, {
+            secret: this.jwtConfig.refresh.secret
         });
 
         const userId = jwt.sub;
@@ -164,8 +216,7 @@ export class AuthService {
     }
 
     private createTokens(userId: number, username: string): JWTTokens & JWTPayload {
-        const secret = this.refreshSecret;
-        const expiresIn = this.refreshExpiration;
+        const { secret, expiry: expiresIn } = this.jwtConfig.refresh;
 
         const payload = { sub: userId, username };
         const accessToken = this.jwtService.sign(payload);

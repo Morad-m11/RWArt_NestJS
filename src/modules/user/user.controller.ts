@@ -2,6 +2,7 @@ import {
     BadRequestException,
     Controller,
     Get,
+    NotFoundException,
     Query,
     Req,
     UseGuards
@@ -39,7 +40,11 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     async getProfile(@Req() req: RequestWithJwt): Promise<UserResponse> {
-        const matchingUser = await this.userService.getById(req.user.userId);
+        const userId = req.user.userId;
+
+        const matchingUser = await this.userService.getById(userId).catch(() => {
+            throw new NotFoundException(`User with ID ${userId} not found`);
+        });
 
         return {
             id: matchingUser.id,
