@@ -2,7 +2,6 @@ import {
     Body,
     Controller,
     ForbiddenException,
-    Get,
     HttpCode,
     HttpStatus,
     Param,
@@ -70,8 +69,9 @@ export class AuthController {
         res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 
-    @Get('verify-account/:token')
-    async verify(@Param('token') token: string) {
+    @HttpCode(HttpStatus.OK)
+    @Post('verify-account/:token')
+    async verify(@Param('token') token: string): Promise<{ valid: boolean }> {
         await this.authService.verify(token);
         return { valid: true };
     }

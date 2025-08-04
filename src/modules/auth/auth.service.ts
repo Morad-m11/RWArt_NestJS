@@ -72,6 +72,15 @@ export class AuthService {
         }
 
         if (!user.email_verified) {
+            const verifyToken = await this.jwtService.signAsync(
+                { sub: user.id, username: user.name },
+                {
+                    secret: this.jwtConfig.verify.secret,
+                    expiresIn: this.jwtConfig.verify.expiry
+                }
+            );
+
+            await this.mail.sendVerificationPrompt(user.email, user.name, verifyToken);
             throw new ForbiddenException('Email not verified');
         }
 
