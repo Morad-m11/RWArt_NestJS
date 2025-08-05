@@ -19,7 +19,7 @@ export class UserService {
 
     async isUniqueUsername(name: string): Promise<boolean> {
         const count = await this.prisma.user.count({
-            where: { name: { equals: name, mode: 'insensitive' } }
+            where: { username: { equals: name, mode: 'insensitive' } }
         });
 
         return count === 0;
@@ -39,7 +39,7 @@ export class UserService {
 
     async getByName(username: string): Promise<User> {
         return await this.prisma.user.findFirstOrThrow({
-            where: { name: { equals: username, mode: 'insensitive' } }
+            where: { username: { equals: username, mode: 'insensitive' } }
         });
     }
 

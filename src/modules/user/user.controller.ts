@@ -49,7 +49,7 @@ export class UserController {
         return {
             id: matchingUser.id,
             email: matchingUser.email,
-            username: matchingUser.name
+            username: matchingUser.username
         };
     }
 }

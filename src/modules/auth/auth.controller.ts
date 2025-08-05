@@ -38,7 +38,7 @@ export class AuthController {
     ): Promise<{ accessToken: string }> {
         const { accessToken, refreshToken } = await this.authService.signIn(
             req.user.id,
-            req.user.name,
+            req.user.username,
             req.ip ?? '[unknown IP]'
         );
 

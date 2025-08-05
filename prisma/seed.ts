@@ -8,16 +8,14 @@ async function main() {
         data: [
             {
                 email: 'john@prisma.io',
-                name: 'Johnny',
-                createdAt: new Date(),
-                passwordHash: bcrypt.hashSync('changeme', 10),
+                username: 'Johnny',
+                passwordHash: await bcrypt.hash('changeme', 10),
                 email_verified: true
             },
             {
                 email: 'maria@prisma.io',
-                name: 'Maria',
-                createdAt: new Date(),
-                passwordHash: bcrypt.hashSync('guess', 10),
+                username: 'Maria',
+                passwordHash: await bcrypt.hash('guess', 10),
                 email_verified: true
             }
         ]
