@@ -8,10 +8,18 @@ import { UserModule } from 'src/modules/user/user.module';
 import { UserService } from '../user/user.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenService } from './token/token.service';
 
 @Module({
     imports: [UserModule, PassportModule, RegisteredJwtModule],
     controllers: [AuthController],
-    providers: [LocalStrategy, AuthService, UserService, MailService, PrismaService]
+    providers: [
+        LocalStrategy,
+        AuthService,
+        UserService,
+        MailService,
+        PrismaService,
+        TokenService
+    ]
 })
 export class AuthModule {}

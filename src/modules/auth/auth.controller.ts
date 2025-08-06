@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     ForbiddenException,
@@ -36,11 +37,13 @@ export class AuthController {
         @Req() req: RequestWithUser,
         @Res({ passthrough: true }) res: Response
     ): Promise<{ accessToken: string }> {
-        const { accessToken, refreshToken } = await this.authService.signIn(
-            req.user.id,
-            req.user.username,
-            req.ip ?? '[unknown IP]'
-        );
+        const { accessToken, refreshToken } = await this.authService
+            .signIn(req.user.id, req.user.username, req.ip ?? '[unknown IP]')
+            .catch((error: Error) => {
+                throw new BadRequestException('User creation failed', {
+                    description: error.message
+                });
+            });
 
         res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
             httpOnly: true,
@@ -72,7 +75,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('verify-account/:token')
     async verify(@Param('token') token: string): Promise<{ valid: boolean }> {
-        await this.authService.verify(token);
+        await this.authService.verifyAccount(token);
         return { valid: true };
     }
 
@@ -85,7 +88,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('reset-password')
     async resetPassword(@Body() body: { password: string; token: string }) {
-        await this.authService.resetPassword(body.password, body.token);
+        await this.authService.resetPassword(body.token, body.password);
     }
 
     @HttpCode(HttpStatus.OK)
@@ -97,8 +100,8 @@ export class AuthController {
         const refreshToken = this.extractRefreshToken(req);
 
         try {
-            const { accessToken } = await this.authService.refreshToken(
-                req,
+            const { accessToken } = await this.authService.refreshAccessToken(
+                req.ip ?? '[unknown IP]',
                 refreshToken
             );
 

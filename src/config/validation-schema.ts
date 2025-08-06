@@ -8,11 +8,9 @@ export enum Config {
 
     JWT_SECRET = 'JWT_SECRET',
     JWT_EXP = 'JWT_EXP',
-    JWT_REFRESH_SECRET = 'JWT_REFRESH_SECRET',
-    JWT_REFRESH_EXP = 'JWT_REFRESH_EXP',
-    JWT_VERIFY_SECRET = 'JWT_VERIFY_SECRET',
-    JWT_VERIFY_EXP = 'JWT_VERIFY_EXP',
 
+    VERIFCATION_TOKEN_EXP = 'VERIFCATION_TOKEN_EXP',
+    REFRESH_TOKEN_EXP = 'REFRESH_TOKEN_EXP',
     PASSWORD_RESET_EXP = 'PASSWORD_RESET_EXP'
 }
 
@@ -25,10 +23,8 @@ export const ConfigValidationSchema = Joi.object<{
 
     JWT_SECRET: Joi.string().required(),
     JWT_EXP: Joi.string().default('15m'),
-    JWT_REFRESH_SECRET: Joi.string().required(),
-    JWT_REFRESH_EXP: Joi.string().default('30d'),
-    JWT_VERIFY_SECRET: Joi.string().required(),
-    JWT_VERIFY_EXP: Joi.string().default('10m'),
 
+    REFRESH_TOKEN_EXP: Joi.custom(parseDuration).default(parseDuration('30d')),
+    VERIFCATION_TOKEN_EXP: Joi.custom(parseDuration).default(parseDuration('10m')),
     PASSWORD_RESET_EXP: Joi.custom(parseDuration).default(parseDuration('10m'))
 });

@@ -14,14 +14,15 @@ generator client {
 }
 
 model User {
-  id                 Int                 @id @default(autoincrement())
-  email              String              @unique
-  username           String
-  passwordHash       String
-  email_verified     Boolean             @default(false)
-  createdAt          DateTime            @default(now())
-  RefreshToken       RefreshToken?
-  PasswordResetToken PasswordResetToken?
+  id                       Int                       @id @default(autoincrement())
+  email                    String                    @unique
+  username                 String
+  passwordHash             String
+  email_verified           Boolean                   @default(false)
+  createdAt                DateTime                  @default(now())
+  RefreshToken             RefreshToken?
+  PasswordResetToken       PasswordResetToken?
+  AccountVerificationToken AccountVerificationToken?
 }
 
 model RefreshToken {
@@ -39,7 +40,16 @@ model RefreshToken {
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique
-  token     String   @unique
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model AccountVerificationToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  tokenHash String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id])
