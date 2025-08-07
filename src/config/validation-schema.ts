@@ -1,6 +1,8 @@
 import Joi from 'joi';
 import { parseDuration } from './parse-duration/parse-duration';
 
+const PINO_LOG_lEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+
 export enum Config {
     NODE_ENV = 'NODE_ENV',
     PORT = 'PORT',
@@ -11,12 +13,13 @@ export enum Config {
 
     VERIFCATION_TOKEN_EXP = 'VERIFCATION_TOKEN_EXP',
     REFRESH_TOKEN_EXP = 'REFRESH_TOKEN_EXP',
-    PASSWORD_RESET_EXP = 'PASSWORD_RESET_EXP'
+    PASSWORD_RESET_EXP = 'PASSWORD_RESET_EXP',
+
+    LOG_PATH = 'LOG_PATH',
+    LOG_LEVEL = 'LOG_LEVEL'
 }
 
-export const ConfigValidationSchema = Joi.object<{
-    [K in keyof typeof Config]: Joi.SchemaLike;
-}>({
+export const ConfigValidationSchema = Joi.object({
     NODE_ENV: Joi.string().valid('development', 'production').default('development'),
     PORT: Joi.number().port().default(3000),
     DATABASE_URL: Joi.string().required(),
@@ -26,5 +29,8 @@ export const ConfigValidationSchema = Joi.object<{
 
     REFRESH_TOKEN_EXP: Joi.custom(parseDuration).default(parseDuration('30d')),
     VERIFCATION_TOKEN_EXP: Joi.custom(parseDuration).default(parseDuration('10m')),
-    PASSWORD_RESET_EXP: Joi.custom(parseDuration).default(parseDuration('10m'))
+    PASSWORD_RESET_EXP: Joi.custom(parseDuration).default(parseDuration('10m')),
+
+    LOG_PATH: Joi.string().default('./logs'),
+    LOG_LEVEL: Joi.valid(...PINO_LOG_lEVELS).default('info')
 });

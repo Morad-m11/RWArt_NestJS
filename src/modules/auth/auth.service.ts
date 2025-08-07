@@ -68,7 +68,7 @@ export class AuthService {
         const profane = isProfane(user.username) || isProfane(user.email);
 
         if (profane) {
-            throw new BadRequestException('Profany detected');
+            throw new BadRequestException('Profanity detected');
         }
 
         const createdUser = await this.userService.create({

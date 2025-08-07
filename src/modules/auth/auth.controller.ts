@@ -67,9 +67,12 @@ export class AuthController {
     async signOut(
         @Req() req: RequestWithJwt,
         @Res({ passthrough: true }) res: Response
-    ): Promise<void> {
+    ): Promise<{ message: string }> {
         await this.authService.signOut(req.user.userId);
+
         res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
+
+        return { message: 'Logged out successfully' };
     }
 
     @HttpCode(HttpStatus.OK)

@@ -21,7 +21,7 @@ export type JWTDecoded = {
 
 export type RequestWithJwt = Request & { user: JWTDecoded };
 
-export const RegisteredJwtModule = JwtModule.registerAsync({
+export const ConfiguredJwtModule = JwtModule.registerAsync({
     global: true,
     inject: [ConfigService],
     useFactory: (config: ConfigService): JwtModuleOptions => {

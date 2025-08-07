@@ -2,8 +2,9 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
-import { loggerMiddleware } from './core/logging-middleware/logging.middleware';
+import { LoggingInterceptor } from './core/interceptors/logging/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -15,7 +16,8 @@ async function bootstrap(): Promise<void> {
     });
 
     app.use(cookieParser());
-    app.use(loggerMiddleware);
+    app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+    app.useGlobalInterceptors(new LoggingInterceptor());
 
     const configService = app.get(ConfigService);
     const port = configService.getOrThrow<number>('PORT');

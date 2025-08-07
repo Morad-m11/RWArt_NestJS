@@ -1,15 +1,21 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { RegisteredConfigModule } from './config/module';
-import { MailService } from './core/mail/mail.service';
+import { ConfiguredWinstonLoggerModule } from './config/logging/winston.module';
+import { ConfiguredConfigModule } from './config/module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ImageModule } from './modules/image/image.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
-    imports: [RegisteredConfigModule, AuthModule, UserModule, ImageModule],
+    imports: [
+        ConfiguredConfigModule,
+        ConfiguredWinstonLoggerModule,
+        AuthModule,
+        UserModule,
+        ImageModule
+    ],
     controllers: [AppController],
-    providers: [AppService, MailService]
+    providers: [AppService]
 })
 export class AppModule {}
