@@ -9,6 +9,7 @@ import bcrypt from 'bcrypt';
 import { MailService } from 'src/core/mail/mail.service';
 import { UserService } from '../user/user.service';
 import { SignupRequest } from './auth.controller';
+import { isProfane } from './profanity-filter/profanity-filter';
 import { TokenService } from './token/token.service';
 
 interface JWTTokens {
@@ -32,6 +33,7 @@ export class AuthService {
         });
 
         const isCorrectPassword = await this.comparePassword(pass, user.passwordHash);
+
         if (!isCorrectPassword) {
             throw new UnauthorizedException();
         }
@@ -63,6 +65,12 @@ export class AuthService {
     }
 
     async signUp(user: SignupRequest): Promise<void> {
+        const profane = isProfane(user.username) || isProfane(user.email);
+
+        if (profane) {
+            throw new BadRequestException('Profany detected');
+        }
+
         const createdUser = await this.userService.create({
             email: user.email,
             username: user.username,

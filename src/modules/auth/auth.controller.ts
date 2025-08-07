@@ -97,41 +97,35 @@ export class AuthController {
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response
     ): Promise<{ accessToken: string }> {
-        const refreshToken = this.extractRefreshToken(req);
-
-        try {
-            const { accessToken } = await this.authService.refreshAccessToken(
-                req.ip ?? '[unknown IP]',
-                refreshToken
-            );
-
-            res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
-                httpOnly: true,
-                sameSite: 'strict',
-                secure: false,
-                path: '/auth'
-            });
-
-            return { accessToken };
-        } catch (error) {
-            res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
-                httpOnly: true,
-                sameSite: 'strict',
-                secure: false,
-                path: '/auth'
-            });
-
-            throw new ForbiddenException(error);
-        }
-    }
-
-    private extractRefreshToken(req: Request): string {
-        const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY] as string;
+        const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY] as string | undefined;
 
         if (!refreshToken) {
-            throw new ForbiddenException('Refresh token is missing');
+            throw new ForbiddenException('Missing refresh token');
         }
 
-        return refreshToken;
+        const { accessToken } = await this.authService
+            .refreshAccessToken(refreshToken, req.ip ?? '[unknown IP]')
+            .catch((error: Error) => {
+                res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
+                    httpOnly: true,
+                    sameSite: 'strict',
+                    secure: false,
+                    path: '/auth'
+                });
+
+                throw new ForbiddenException(
+                    'Could not refresh access token',
+                    error.message
+                );
+            });
+
+        res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+            path: '/auth'
+        });
+
+        return { accessToken };
     }
 }

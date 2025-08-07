@@ -10,6 +10,7 @@ import { MailService } from 'src/core/mail/mail.service';
 import { provideValue } from 'src/core/utils/provide';
 import { UserService } from 'src/modules/user/user.service';
 import { AuthService } from './auth.service';
+import * as profaneFilter from './profanity-filter/profanity-filter';
 import { TokenService } from './token/token.service';
 
 const USER: User = {
@@ -129,6 +130,23 @@ describe('AuthService', () => {
     });
 
     describe('Sign up', () => {
+        beforeEach(() => {
+            // skip profanity check
+            jest.spyOn(profaneFilter, 'isProfane').mockReturnValue(false);
+        });
+
+        it('should throw a 400 if any profanities are detected', async () => {
+            jest.spyOn(profaneFilter, 'isProfane').mockReturnValue(true);
+
+            const fn = service.signUp({
+                email: 'mail',
+                username: 'fuck',
+                password: 'pass'
+            });
+
+            await expect(fn).rejects.toThrow(BadRequestException);
+        });
+
         it('should create a user with a hashed password', async () => {
             jest.spyOn(service, 'hashPassword').mockResolvedValue('hashed');
             userService.create.mockResolvedValue(USER);
