@@ -6,7 +6,7 @@ import {
     Logger,
     NestInterceptor
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
 @Injectable()
@@ -35,12 +35,30 @@ export class LoggingInterceptor implements NestInterceptor {
 
     private logError(err: Error, context: ExecutionContext) {
         const request = context.switchToHttp().getRequest<Request>();
+        const response = context.switchToHttp().getResponse<Response>();
 
-        if (!(err instanceof HttpException)) {
-            this.logger.error({ message: `ERROR: ${request.method} ${request.url}` });
-            return;
+        if (err instanceof HttpException) {
+            this.logHttpException(request, err);
+        } else {
+            this.logUnknownException(request, response, err);
         }
+    }
 
+    private logUnknownException(request: Request, response: Response, err: Error) {
+        response.on('finish', () => {
+            this.logger.error(
+                {
+                    method: request.method,
+                    url: request.url,
+                    status: response.statusCode,
+                    error: err.name
+                },
+                err.stack?.split('\n').slice(0, 10).join('\n')
+            );
+        });
+    }
+
+    private logHttpException(request: Request, err: HttpException) {
         const statusCode = err.getStatus();
         const errorObject = {
             method: request.method,

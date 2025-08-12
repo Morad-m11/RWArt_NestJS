@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './core/filters/prisma/prisma.filter';
 import { LoggingInterceptor } from './core/interceptors/logging/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
@@ -18,6 +19,7 @@ async function bootstrap(): Promise<void> {
     app.use(cookieParser());
     app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
     app.useGlobalInterceptors(new LoggingInterceptor());
+    app.useGlobalFilters(new PrismaClientExceptionFilter());
 
     const configService = app.get(ConfigService);
     const port = configService.getOrThrow<number>('PORT');
