@@ -1,5 +1,6 @@
 import {
     BadRequestException,
+    ConflictException,
     Controller,
     Get,
     NotFoundException,
@@ -25,16 +26,24 @@ export class UserController {
     async checkUniqueProperties(
         @Query('username') username: string,
         @Query('email') email: string
-    ): Promise<{ unique: boolean }> {
-        if (username) {
-            return { unique: await this.userService.isUniqueUsername(username) };
+    ): Promise<{ unique: true }> {
+        if ((!username && !email) || (username && email)) {
+            throw new BadRequestException(
+                'Exactly one parameter (username or email) must be provided'
+            );
         }
 
-        if (email) {
-            return { unique: await this.userService.isUniqueEmail(email) };
+        const isUnique = username
+            ? await this.userService.isUniqueUsername(username)
+            : await this.userService.isUniqueEmail(email);
+
+        if (!isUnique) {
+            throw new ConflictException(
+                `${username ? 'Username' : 'Email'} is not unique`
+            );
         }
 
-        throw new BadRequestException('No parameters were provided for the unique check');
+        return { unique: true };
     }
 
     @UseGuards(JwtAuthGuard)
