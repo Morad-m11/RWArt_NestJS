@@ -14,41 +14,45 @@ export class LoggingInterceptor implements NestInterceptor {
     private readonly logger = new Logger('HTTP');
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-        const startTime = Date.now();
-        const request = context.switchToHttp().getRequest<Request>();
-
         return next.handle().pipe(
             tap({
-                next: (response: Response) =>
-                    this.logSuccess(startTime, request, response),
-                error: (error: HttpException) => this.logError(startTime, request, error)
+                next: (val: unknown) => this.logNext(val, context),
+                error: (err: Error) => this.logError(err, context)
             })
         );
     }
 
-    private logSuccess(startTime: number, request: Request, response: Response) {
-        const responseTime = Date.now() - startTime;
+    private logNext(_val: unknown, context: ExecutionContext) {
+        const request = context.switchToHttp().getRequest<Request>();
+        const response = context.switchToHttp().getResponse<Response>();
 
         this.logger.log({
             method: request.method,
             url: request.url,
-            status: response.statusCode,
-            time: `${responseTime}ms`
+            status: response.statusCode
         });
     }
 
-    private logError(startTime: number, request: Request, error: HttpException) {
-        const responseTime = Date.now() - startTime;
+    private logError(err: Error, context: ExecutionContext) {
+        const request = context.switchToHttp().getRequest<Request>();
 
-        this.logger.error(
-            {
-                method: request.method,
-                url: request.url,
-                status: error.getStatus(),
-                time: `${responseTime}ms`,
-                error: error.getResponse()
-            },
-            error.stack
-        );
+        if (!(err instanceof HttpException)) {
+            this.logger.error({ message: `ERROR: ${request.method} ${request.url}` });
+            return;
+        }
+
+        const statusCode = err.getStatus();
+        const errorObject = {
+            method: request.method,
+            url: request.url,
+            status: statusCode,
+            error: err.getResponse()
+        };
+
+        if (statusCode >= 500) {
+            this.logger.error(errorObject, err.stack);
+        } else {
+            this.logger.warn(errorObject);
+        }
     }
 }
