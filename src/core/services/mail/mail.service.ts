@@ -4,8 +4,8 @@ import { createAccountRecoveryHTML, createVerificationHTML } from './message-tem
 
 @Injectable()
 export class MailService {
-    async sendVerificationPrompt(email: string, name: string, token: string) {
-        const message = createVerificationHTML(name, token);
+    async sendVerificationPrompt(email: string, token: string) {
+        const message = createVerificationHTML(token);
         await this.send(email, message);
     }
 

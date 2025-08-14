@@ -49,11 +49,11 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     async getProfile(@Req() req: RequestWithJwt): Promise<UserResponse> {
-        const userId = req.user.userId;
+        const matchingUser = await this.userService.findById(req.user.userId);
 
-        const matchingUser = await this.userService.getById(userId).catch(() => {
-            throw new NotFoundException(`User with ID ${userId} not found`);
-        });
+        if (!matchingUser) {
+            throw new NotFoundException(`User with ID ${req.user.userId} not found`);
+        }
 
         return {
             id: matchingUser.id,

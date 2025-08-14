@@ -6,10 +6,9 @@ import {
 } from '@nestjs/common';
 import { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { MailService } from 'src/core/mail/mail.service';
+import { MailService } from 'src/core/services/mail/mail.service';
 import { UserService } from '../user/user.service';
 import { SignupRequest } from './auth.controller';
-import { isProfane } from './profanity-filter/profanity-filter';
 import { TokenService } from './token/token.service';
 
 interface JWTTokens {
@@ -28,12 +27,13 @@ export class AuthService {
     ) {}
 
     async validateUser(name: string, pass: string): Promise<User> {
-        const user = await this.userService.getByName(name).catch(() => {
+        const user = await this.userService.findByName(name);
+
+        if (!user) {
             throw new UnauthorizedException();
-        });
+        }
 
         const isCorrectPassword = await this.comparePassword(pass, user.passwordHash);
-
         if (!isCorrectPassword) {
             throw new UnauthorizedException();
         }
@@ -41,11 +41,7 @@ export class AuthService {
         if (!user.email_verified) {
             const token = await this.tokenService.createVerificationToken(user.id);
 
-            await this.mailService.sendVerificationPrompt(
-                user.email,
-                user.username,
-                token
-            );
+            await this.mailService.sendVerificationPrompt(user.email, token);
 
             throw new ForbiddenException('Email not verified');
         }
@@ -65,25 +61,24 @@ export class AuthService {
     }
 
     async signUp(user: SignupRequest): Promise<void> {
-        const profane = isProfane(user.username) || isProfane(user.email);
+        const existingUser = await this.userService.findByEmail(user.email);
 
-        if (profane) {
-            throw new BadRequestException('Profanity detected');
+        if (existingUser) {
+            const token = await this.tokenService.createVerificationToken(
+                existingUser.id
+            );
+            await this.mailService.sendVerificationPrompt(user.email, token);
+        } else {
+            const createdUser = await this.userService.create({
+                email: user.email,
+                username: user.username,
+                passwordHash: await this.hashPassword(user.password)
+            });
+
+            const token = await this.tokenService.createVerificationToken(createdUser.id);
+
+            await this.mailService.sendVerificationPrompt(createdUser.email, token);
         }
-
-        const createdUser = await this.userService.create({
-            email: user.email,
-            username: user.username,
-            passwordHash: await this.hashPassword(user.password)
-        });
-
-        const token = await this.tokenService.createVerificationToken(createdUser.id);
-
-        await this.mailService.sendVerificationPrompt(
-            createdUser.email,
-            createdUser.username,
-            token
-        );
     }
 
     async signOut(userId: number): Promise<void> {
@@ -105,7 +100,7 @@ export class AuthService {
     }
 
     async recoverAccount(email: string): Promise<void> {
-        const user = await this.userService.getByEmail(email).catch(() => null);
+        const user = await this.userService.findByEmail(email).catch(() => null);
 
         if (!user) {
             return;

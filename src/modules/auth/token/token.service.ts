@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client';
 import crypto from 'crypto';
 import { Config } from 'src/config/validation-schema';
 import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
-import { PrismaService } from 'src/core/prisma.service';
+import { PrismaService } from 'src/core/services/prisma/prisma.service';
 
 @Injectable()
 export class TokenService {

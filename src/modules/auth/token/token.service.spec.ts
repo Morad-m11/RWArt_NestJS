@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from 'src/core/prisma.service';
+import { PrismaService } from 'src/core/services/prisma/prisma.service';
 import { provideEmpty, provideValue } from 'src/core/utils/provide';
 import { TokenService } from './token.service';
 
