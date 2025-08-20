@@ -9,18 +9,27 @@ import {
     Post,
     Req,
     Res,
+    UnauthorizedException,
     UseGuards
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request, Response } from 'express';
+import { CookieOptions, Request, Response } from 'express';
 import { Config } from 'src/config/validation-schema';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
-import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { RequestWithUser } from 'src/core/auth/local/local.strategy';
+import { Cookies } from 'src/core/decorators/cookie/cookie.decorator';
 import { AuthService } from './auth.service';
 
 const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
+
+const refreshCookieOptions: (expiry: number) => CookieOptions = (expiry) => ({
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: false,
+    path: '/auth',
+    maxAge: expiry
+});
 
 export interface SignupRequest {
     email: string;
@@ -54,7 +63,11 @@ export class AuthController {
                 });
             });
 
-        this.setRefreshTokenCookie(res, refreshToken);
+        res.cookie(
+            REFRESH_TOKEN_COOKIE_KEY,
+            refreshToken,
+            refreshCookieOptions(this._refreshTokenExpiry)
+        );
 
         return { accessToken };
     }
@@ -69,12 +82,21 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('logout')
     async signOut(
-        @Req() req: RequestWithJwt,
-        @Res({ passthrough: true }) res: Response
+        @Res({ passthrough: true }) res: Response,
+        @Cookies(REFRESH_TOKEN_COOKIE_KEY) refreshToken?: string
     ): Promise<{ message: string }> {
-        await this.authService.signOut(req.user.userId);
+        if (!refreshToken) {
+            throw new BadRequestException('Missing refresh token');
+        }
 
-        this.clearRefreshTokenCookie(res);
+        await this.authService.signOut(refreshToken).catch(() => {
+            throw new ForbiddenException('Invalid or expired refresh token');
+        });
+
+        res.clearCookie(
+            REFRESH_TOKEN_COOKIE_KEY,
+            refreshCookieOptions(this._refreshTokenExpiry)
+        );
 
         return { message: 'Logged out successfully' };
     }
@@ -102,41 +124,33 @@ export class AuthController {
     @Post('refresh')
     async refreshToken(
         @Req() req: Request,
-        @Res({ passthrough: true }) res: Response
+        @Res({ passthrough: true }) res: Response,
+        @Cookies(REFRESH_TOKEN_COOKIE_KEY) refreshToken?: string
     ): Promise<{ accessToken: string }> {
-        const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_KEY] as string | undefined;
-
         if (!refreshToken) {
-            throw new ForbiddenException('Missing refresh token');
+            throw new BadRequestException('Missing refresh token');
         }
 
-        const { accessToken } = await this.authService
+        const { accessToken, refreshToken: newRefreshToken } = await this.authService
             .refreshAccessToken(refreshToken, req.ip ?? '[unknown IP]')
             .catch((error: Error) => {
-                this.clearRefreshTokenCookie(res);
+                res.clearCookie(
+                    REFRESH_TOKEN_COOKIE_KEY,
+                    refreshCookieOptions(this._refreshTokenExpiry)
+                );
 
-                throw new ForbiddenException(
+                throw new UnauthorizedException(
                     'Could not refresh access token',
                     error.message
                 );
             });
 
-        this.setRefreshTokenCookie(res, refreshToken);
+        res.cookie(
+            REFRESH_TOKEN_COOKIE_KEY,
+            newRefreshToken,
+            refreshCookieOptions(this._refreshTokenExpiry)
+        );
 
         return { accessToken };
-    }
-
-    private setRefreshTokenCookie(res: Response, token: string) {
-        res.cookie(REFRESH_TOKEN_COOKIE_KEY, token, {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-            path: '/auth',
-            maxAge: this._refreshTokenExpiry
-        });
-    }
-
-    private clearRefreshTokenCookie(res: Response) {
-        res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 }

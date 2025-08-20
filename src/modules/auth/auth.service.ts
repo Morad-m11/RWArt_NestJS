@@ -81,8 +81,8 @@ export class AuthService {
         }
     }
 
-    async signOut(userId: number): Promise<void> {
-        await this.tokenService.revokeRefreshToken(userId, 'logged out');
+    async signOut(refreshToken: string): Promise<void> {
+        await this.tokenService.revokeRefreshToken(refreshToken, 'Logged out');
     }
 
     async verifyAccount(verificationToken: string): Promise<void> {
@@ -126,20 +126,25 @@ export class AuthService {
     }
 
     async refreshAccessToken(refreshToken: string, userIP: string): Promise<JWTTokens> {
-        const { userId, username } = await this.tokenService
-            .findValidRefreshToken(refreshToken)
-            .catch(() => {
-                throw new BadRequestException('Invalid or expired refresh token');
-            });
+        const token = await this.tokenService.findValidRefreshToken(refreshToken);
+
+        if (!token) {
+            throw new BadRequestException('Invalid or expired refresh token');
+        }
 
         const accessToken = await this.tokenService.createAccessToken({
-            sub: userId,
-            username
+            sub: token.userId,
+            username: token.username
         });
 
         const newRefreshToken = await this.tokenService.createRefreshToken(
-            userId,
+            token.userId,
             userIP
+        );
+
+        await this.tokenService.revokeRefreshToken(
+            refreshToken,
+            'Used in access token refresh'
         );
 
         return {

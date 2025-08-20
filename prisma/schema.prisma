@@ -5,52 +5,52 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 model User {
-  id                       Int                       @id @default(autoincrement())
-  email                    String                    @unique
-  username                 String
-  passwordHash             String
-  email_verified           Boolean                   @default(false)
-  createdAt                DateTime                  @default(now())
-  RefreshToken             RefreshToken?
-  PasswordResetToken       PasswordResetToken?
-  AccountVerificationToken AccountVerificationToken?
+    id                       Int                       @id @default(autoincrement())
+    email                    String                    @unique
+    username                 String
+    passwordHash             String
+    email_verified           Boolean                   @default(false)
+    createdAt                DateTime                  @default(now())
+    refreshTokens            RefreshToken[]
+    passwordResetToken       PasswordResetToken?
+    accountVerificationToken AccountVerificationToken?
 }
 
 model RefreshToken {
-  id            Int       @id @default(autoincrement())
-  userId        Int       @unique
-  tokenHash     String    @unique
-  createdByIp   String
-  issuedAt      DateTime  @default(now())
-  expiresAt     DateTime
-  revokedAt     DateTime?
-  revokedReason String?
-  user          User      @relation(fields: [userId], references: [id])
+    id            Int       @id @default(autoincrement())
+    userId        Int
+    tokenHash     String    @unique
+    createdByIp   String
+    createdAt     DateTime  @default(now())
+    expiresAt     DateTime
+    revokedAt     DateTime?
+    revokedReason String?
+    user          User      @relation(fields: [userId], references: [id])
 }
 
 model PasswordResetToken {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  tokenHash String   @unique
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id])
+    id        Int      @id @default(autoincrement())
+    userId    Int      @unique
+    tokenHash String   @unique
+    createdAt DateTime @default(now())
+    expiresAt DateTime
+    user      User     @relation(fields: [userId], references: [id])
 }
 
 model AccountVerificationToken {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  tokenHash String   @unique
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-  user      User     @relation(fields: [userId], references: [id])
+    id        Int      @id @default(autoincrement())
+    userId    Int      @unique
+    tokenHash String   @unique
+    createdAt DateTime @default(now())
+    expiresAt DateTime
+    user      User     @relation(fields: [userId], references: [id])
 }

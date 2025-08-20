@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma } from '@prisma/client';
 import crypto from 'crypto';
 import { Config } from 'src/config/validation-schema';
 import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
@@ -113,19 +112,15 @@ export class TokenService {
     async createRefreshToken(userId: number, userIP: string): Promise<string> {
         const token = this.createToken();
 
-        const dbToken: Prisma.RefreshTokenCreateInput & Prisma.RefreshTokenUpdateInput = {
-            tokenHash: this.hashToken(token),
-            expiresAt: this.getFutureDateOffset(this.expiries.refreshToken),
-            createdByIp: userIP,
-            user: {
-                connect: { id: userId }
+        await this.prisma.refreshToken.create({
+            data: {
+                tokenHash: this.hashToken(token),
+                expiresAt: this.getFutureDateOffset(this.expiries.refreshToken),
+                createdByIp: userIP,
+                user: {
+                    connect: { id: userId }
+                }
             }
-        };
-
-        await this.prisma.refreshToken.upsert({
-            create: dbToken,
-            update: dbToken,
-            where: { userId }
         });
 
         return token;
@@ -133,26 +128,30 @@ export class TokenService {
 
     async findValidRefreshToken(
         refreshToken: string
-    ): Promise<{ userId: number; username: string }> {
+    ): Promise<{ id: number; userId: number; username: string } | null> {
         const tokenHash = this.hashToken(refreshToken);
 
-        const { user } = await this.prisma.refreshToken.findFirstOrThrow({
+        const token = await this.prisma.refreshToken.findUnique({
             where: {
                 tokenHash,
                 revokedAt: null,
                 expiresAt: { gt: new Date() }
             },
             select: {
+                id: true,
                 user: {
                     select: { id: true, username: true }
                 }
             }
         });
 
-        return {
-            userId: user.id,
-            username: user.username
-        };
+        return token
+            ? {
+                  id: token.id,
+                  userId: token.user.id,
+                  username: token.user.username
+              }
+            : null;
     }
 
     async createAccessToken(
@@ -161,13 +160,19 @@ export class TokenService {
         return await this.jwt.signAsync(payload);
     }
 
-    async revokeRefreshToken(userId: number, reason: string) {
+    async revokeRefreshToken(refreshToken: string, reason: string): Promise<void> {
+        const token = await this.findValidRefreshToken(refreshToken);
+
+        if (!token) {
+            return;
+        }
+
         await this.prisma.refreshToken.update({
             data: {
                 revokedAt: new Date(),
                 revokedReason: reason
             },
-            where: { userId }
+            where: { id: token.id }
         });
     }
 
