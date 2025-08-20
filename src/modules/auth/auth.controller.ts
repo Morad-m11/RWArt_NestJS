@@ -11,7 +11,9 @@ import {
     Res,
     UseGuards
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import { Config } from 'src/config/validation-schema';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
@@ -28,7 +30,14 @@ export interface SignupRequest {
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    private readonly _refreshTokenExpiry: number;
+
+    constructor(
+        config: ConfigService,
+        private authService: AuthService
+    ) {
+        this._refreshTokenExpiry = config.getOrThrow(Config.REFRESH_TOKEN_EXP);
+    }
 
     @UseGuards(LocalAuthGuard)
     @HttpCode(HttpStatus.OK)
@@ -45,12 +54,7 @@ export class AuthController {
                 });
             });
 
-        res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-            path: '/auth'
-        });
+        this.setRefreshTokenCookie(res, refreshToken);
 
         return { accessToken };
     }
@@ -70,7 +74,7 @@ export class AuthController {
     ): Promise<{ message: string }> {
         await this.authService.signOut(req.user.userId);
 
-        res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
+        this.clearRefreshTokenCookie(res);
 
         return { message: 'Logged out successfully' };
     }
@@ -109,12 +113,7 @@ export class AuthController {
         const { accessToken } = await this.authService
             .refreshAccessToken(refreshToken, req.ip ?? '[unknown IP]')
             .catch((error: Error) => {
-                res.clearCookie(REFRESH_TOKEN_COOKIE_KEY, {
-                    httpOnly: true,
-                    sameSite: 'strict',
-                    secure: false,
-                    path: '/auth'
-                });
+                this.clearRefreshTokenCookie(res);
 
                 throw new ForbiddenException(
                     'Could not refresh access token',
@@ -122,13 +121,22 @@ export class AuthController {
                 );
             });
 
-        res.cookie(REFRESH_TOKEN_COOKIE_KEY, refreshToken, {
+        this.setRefreshTokenCookie(res, refreshToken);
+
+        return { accessToken };
+    }
+
+    private setRefreshTokenCookie(res: Response, token: string) {
+        res.cookie(REFRESH_TOKEN_COOKIE_KEY, token, {
             httpOnly: true,
             sameSite: 'strict',
             secure: false,
-            path: '/auth'
+            path: '/auth',
+            maxAge: this._refreshTokenExpiry
         });
+    }
 
-        return { accessToken };
+    private clearRefreshTokenCookie(res: Response) {
+        res.clearCookie(REFRESH_TOKEN_COOKIE_KEY);
     }
 }

@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
+import { Request } from 'express';
 
 export interface JWTPayload {
     /** user id */
