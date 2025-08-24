@@ -50,11 +50,7 @@ export class AuthService {
     }
 
     async signIn(userId: number, username: string, userIP: string): Promise<JWTTokens> {
-        const accessToken = await this.tokenService.createAccessToken({
-            sub: userId,
-            username
-        });
-
+        const accessToken = await this.tokenService.createAccessToken(userId, username);
         const refreshToken = await this.tokenService.createRefreshToken(userId, userIP);
 
         return { accessToken, refreshToken };
@@ -126,31 +122,7 @@ export class AuthService {
     }
 
     async refreshAccessToken(refreshToken: string, userIP: string): Promise<JWTTokens> {
-        const token = await this.tokenService.findValidRefreshToken(refreshToken);
-
-        if (!token) {
-            throw new BadRequestException('Invalid or expired refresh token');
-        }
-
-        const accessToken = await this.tokenService.createAccessToken({
-            sub: token.userId,
-            username: token.username
-        });
-
-        const newRefreshToken = await this.tokenService.createRefreshToken(
-            token.userId,
-            userIP
-        );
-
-        await this.tokenService.revokeRefreshToken(
-            refreshToken,
-            'Used in access token refresh'
-        );
-
-        return {
-            accessToken,
-            refreshToken: newRefreshToken
-        };
+        return await this.tokenService.refreshAccessToken(refreshToken, userIP);
     }
 
     async hashPassword(rawValue: string): Promise<string> {

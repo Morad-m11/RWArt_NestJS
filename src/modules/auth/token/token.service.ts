@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { RefreshToken, User } from '@prisma/client';
 import crypto from 'crypto';
 import { Config } from 'src/config/validation-schema';
-import { JWTPayload } from 'src/core/auth/jwt/jwt.module';
+import { MailService } from 'src/core/services/mail/mail.service';
 import { PrismaService } from 'src/core/services/prisma/prisma.service';
 
 @Injectable()
@@ -17,7 +18,8 @@ export class TokenService {
     constructor(
         config: ConfigService,
         private jwt: JwtService,
-        private prisma: PrismaService
+        private prisma: PrismaService,
+        private mail: MailService
     ) {
         this.expiries = {
             refreshToken: config.getOrThrow(Config.REFRESH_TOKEN_EXP),
@@ -126,53 +128,79 @@ export class TokenService {
         return token;
     }
 
-    async findValidRefreshToken(
+    async createAccessToken(id: number, username: string): Promise<string> {
+        return await this.jwt.signAsync({ sub: id, username });
+    }
+
+    async refreshAccessToken(
+        refreshToken: string,
+        userIP: string
+    ): Promise<{ accessToken: string; refreshToken: string }> {
+        const foundToken = await this.findRefreshToken(refreshToken);
+
+        if (!foundToken || foundToken.expiresAt < new Date()) {
+            throw new UnauthorizedException('Invalid or expired token');
+        }
+
+        const user = foundToken.user;
+
+        if (foundToken.revokedAt) {
+            await this.revokeAllRefreshTokens(user.id);
+            await this.mail.sendTokenReusedMail(user.email, user.username);
+            throw new UnauthorizedException('Token reuse detected');
+        }
+
+        await this.revokeRefreshTokenById(foundToken.id, 'Rotated');
+
+        return {
+            accessToken: await this.createAccessToken(user.id, user.username),
+            refreshToken: await this.createRefreshToken(user.id, userIP)
+        };
+    }
+
+    async findRefreshToken(
         refreshToken: string
-    ): Promise<{ id: number; userId: number; username: string } | null> {
+    ): Promise<(RefreshToken & { user: User }) | null> {
         const tokenHash = this.hashToken(refreshToken);
 
-        const token = await this.prisma.refreshToken.findUnique({
-            where: {
-                tokenHash,
-                revokedAt: null,
-                expiresAt: { gt: new Date() }
-            },
-            select: {
-                id: true,
-                user: {
-                    select: { id: true, username: true }
-                }
-            }
+        return await this.prisma.refreshToken.findUnique({
+            where: { tokenHash },
+            include: { user: true }
         });
-
-        return token
-            ? {
-                  id: token.id,
-                  userId: token.user.id,
-                  username: token.user.username
-              }
-            : null;
     }
 
-    async createAccessToken(
-        payload: Pick<JWTPayload, 'sub' | 'username'>
-    ): Promise<string> {
-        return await this.jwt.signAsync(payload);
-    }
-
-    async revokeRefreshToken(refreshToken: string, reason: string): Promise<void> {
-        const token = await this.findValidRefreshToken(refreshToken);
-
-        if (!token) {
-            return;
-        }
+    async revokeRefreshToken(token: string, reason: string) {
+        const tokenHash = this.hashToken(token);
 
         await this.prisma.refreshToken.update({
             data: {
                 revokedAt: new Date(),
                 revokedReason: reason
             },
-            where: { id: token.id }
+            where: { tokenHash }
+        });
+    }
+
+    private async revokeRefreshTokenById(id: number, reason: string): Promise<void> {
+        await this.prisma.refreshToken.update({
+            data: {
+                revokedAt: new Date(),
+                revokedReason: reason
+            },
+            where: { id }
+        });
+    }
+
+    private async revokeAllRefreshTokens(userId: number) {
+        await this.prisma.refreshToken.updateMany({
+            data: {
+                revokedAt: new Date(),
+                revokedReason: 'Token reuse detected'
+            },
+            where: {
+                userId,
+                revokedAt: null
+            }
         });
     }
 

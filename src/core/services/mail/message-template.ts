@@ -22,3 +22,12 @@ export const createAccountRecoveryHTML = (name: string, token: string) => {
         </a>
     `;
 };
+
+export const createTokenReusedHTML = (name: string) => {
+    return `
+        <h1>Hello ${name}</h1>
+        
+        <p>We detected suspicious activity regarding your account and have logged you out of our website as an automatic security measure</p>
+        <p>You can log in again at any time</p>
+    `;
+};

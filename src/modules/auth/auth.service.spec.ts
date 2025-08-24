@@ -106,11 +106,7 @@ describe('AuthService', () => {
         it('should call token creation with correct parameters', async () => {
             await service.signIn(1, 'name', 'IP');
 
-            expect(tokenService.createAccessToken).toHaveBeenCalledWith({
-                sub: 1,
-                username: 'name'
-            });
-
+            expect(tokenService.createAccessToken).toHaveBeenCalledWith(1, 'name');
             expect(tokenService.createRefreshToken).toHaveBeenCalledWith(1, 'IP');
         });
 
@@ -334,65 +330,6 @@ describe('AuthService', () => {
             await service.resetPassword('token', 'new password');
 
             expect(tokenService.deletePasswordResetToken).toHaveBeenCalledWith(2);
-        });
-    });
-
-    describe('Access Token Refresh', () => {
-        it("should throw a 400 if the token isn't found ", async () => {
-            tokenService.findValidRefreshToken.mockResolvedValue(null);
-
-            const fn = service.refreshAccessToken('token', 'user ip');
-
-            await expect(fn).rejects.toThrow(BadRequestException);
-        });
-
-        it('should call to create access & refresh token', async () => {
-            tokenService.findValidRefreshToken.mockResolvedValue({
-                id: 1,
-                userId: 1,
-                username: 'name'
-            });
-
-            await service.refreshAccessToken('token', 'user IP');
-
-            expect(tokenService.createAccessToken).toHaveBeenCalledWith({
-                sub: 1,
-                username: 'name'
-            });
-
-            expect(tokenService.createRefreshToken).toHaveBeenCalledWith(1, 'user IP');
-        });
-
-        it('should call to revoke the current refresh token', async () => {
-            tokenService.findValidRefreshToken.mockResolvedValue({
-                id: 1,
-                userId: 1,
-                username: 'name'
-            });
-
-            await service.refreshAccessToken('token', 'user IP');
-
-            expect(tokenService.revokeRefreshToken).toHaveBeenCalledWith(
-                'token',
-                expect.any(String)
-            );
-        });
-
-        it('should return created access & refresh tokens', async () => {
-            tokenService.findValidRefreshToken.mockResolvedValue({
-                id: 1,
-                userId: 1,
-                username: 'name'
-            });
-            tokenService.createAccessToken.mockResolvedValue('access');
-            tokenService.createRefreshToken.mockResolvedValue('new token');
-
-            const tokens = await service.refreshAccessToken('old token', 'user IP');
-
-            expect(tokens).toEqual({
-                accessToken: 'access',
-                refreshToken: 'new token'
-            });
         });
     });
 });

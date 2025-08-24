@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { MailService } from 'src/core/services/mail/mail.service';
 import { PrismaService } from 'src/core/services/prisma/prisma.service';
 import { provideEmpty, provideValue } from 'src/core/utils/provide';
 import { TokenService } from './token.service';
@@ -13,7 +14,7 @@ describe('TokenService', () => {
             providers: [
                 TokenService,
                 provideValue(ConfigService, { getOrThrow: jest.fn() }),
-                ...provideEmpty(JwtService, PrismaService)
+                ...provideEmpty(JwtService, PrismaService, MailService)
             ]
         }).compile();
 

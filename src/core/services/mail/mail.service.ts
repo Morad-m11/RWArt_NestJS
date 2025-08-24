@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import mailer from 'nodemailer';
-import { createAccountRecoveryHTML, createVerificationHTML } from './message-template';
+import {
+    createAccountRecoveryHTML,
+    createTokenReusedHTML,
+    createVerificationHTML
+} from './message-template';
 
 @Injectable()
 export class MailService {
@@ -11,6 +15,11 @@ export class MailService {
 
     async sendAccountRecoveryPrompt(email: string, name: string, token: string) {
         const message = createAccountRecoveryHTML(name, token);
+        await this.send(email, message);
+    }
+
+    async sendTokenReusedMail(email: string, name: string) {
+        const message = createTokenReusedHTML(name);
         await this.send(email, message);
     }
 
