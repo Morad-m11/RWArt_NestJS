@@ -6,11 +6,8 @@ import { PrismaService } from 'src/core/services/prisma/prisma.service';
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
-    async create(user: Prisma.UserCreateInput): Promise<Omit<User, 'passwordHash'>> {
-        return await this.prisma.user.create({
-            data: user,
-            omit: { passwordHash: true }
-        });
+    async create(user: Prisma.UserCreateInput): Promise<User> {
+        return await this.prisma.user.create({ data: user });
     }
 
     async update(id: User['id'], user: Prisma.UserUpdateInput) {

@@ -123,6 +123,13 @@ export class AuthController {
         return { valid: true };
     }
 
+    @Throttle({ long: { ttl: minutes(1), limit: 1 } })
+    @HttpCode(HttpStatus.OK)
+    @Post('resend-verification')
+    async resendVerification(@Body('username') username: string): Promise<void> {
+        await this.authService.resendVerification(username);
+    }
+
     @Throttle({
         medium: { ttl: minutes(10), limit: 3 },
         long: { ttl: minutes(10), limit: 1, getTracker: trackByEmail }

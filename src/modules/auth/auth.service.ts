@@ -40,9 +40,7 @@ export class AuthService {
 
         if (!user.email_verified) {
             const token = await this.tokenService.createVerificationToken(user.id);
-
             await this.mailService.sendVerificationPrompt(user.email, token);
-
             throw new ForbiddenException('Email not verified');
         }
 
@@ -52,29 +50,22 @@ export class AuthService {
     async signIn(userId: number, username: string, userIP: string): Promise<JWTTokens> {
         const accessToken = await this.tokenService.createAccessToken(userId, username);
         const refreshToken = await this.tokenService.createRefreshToken(userId, userIP);
-
         return { accessToken, refreshToken };
     }
 
     async signUp(user: SignupRequest): Promise<void> {
-        const existingUser = await this.userService.findByEmail(user.email);
+        let existingUser = await this.userService.findByEmail(user.email);
 
-        if (existingUser) {
-            const token = await this.tokenService.createVerificationToken(
-                existingUser.id
-            );
-            await this.mailService.sendVerificationPrompt(user.email, token);
-        } else {
-            const createdUser = await this.userService.create({
+        if (!existingUser) {
+            existingUser = await this.userService.create({
                 email: user.email,
                 username: user.username,
                 passwordHash: await this.hashPassword(user.password)
             });
-
-            const token = await this.tokenService.createVerificationToken(createdUser.id);
-
-            await this.mailService.sendVerificationPrompt(createdUser.email, token);
         }
+
+        const token = await this.tokenService.createVerificationToken(existingUser.id);
+        await this.mailService.sendVerificationPrompt(existingUser.email, token);
     }
 
     async signOut(refreshToken: string): Promise<void> {
@@ -95,15 +86,25 @@ export class AuthService {
         await this.tokenService.deleteVerificationToken(tokenId);
     }
 
+    async resendVerification(username: string) {
+        const user = await this.userService.findByName(username);
+
+        if (!user) {
+            return;
+        }
+
+        const token = await this.tokenService.createVerificationToken(user.id);
+        await this.mailService.sendVerificationPrompt(user.email, token);
+    }
+
     async recoverAccount(email: string): Promise<void> {
-        const user = await this.userService.findByEmail(email).catch(() => null);
+        const user = await this.userService.findByEmail(email);
 
         if (!user) {
             return;
         }
 
         const token = await this.tokenService.createPasswordResetToken(user.id);
-
         await this.mailService.sendAccountRecoveryPrompt(email, user.username, token);
     }
 

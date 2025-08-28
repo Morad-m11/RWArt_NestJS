@@ -265,13 +265,36 @@ describe('AuthService', () => {
         });
     });
 
+    describe('Resend Verification', () => {
+        it('should look up the user by name and do nothing if not found', async () => {
+            userService.findByName.mockResolvedValue(null);
+
+            await service.resendVerification('user');
+
+            expect(tokenService.createVerificationToken).not.toHaveBeenCalled();
+            expect(mailService.sendVerificationPrompt).not.toHaveBeenCalled();
+        });
+
+        it('should create a new verification token and send it via mail', async () => {
+            userService.findByName.mockResolvedValue(USER);
+            tokenService.createVerificationToken.mockResolvedValue('token');
+
+            await service.resendVerification('user');
+
+            expect(tokenService.createVerificationToken).toHaveBeenCalledWith(USER.id);
+            expect(mailService.sendVerificationPrompt).toHaveBeenCalledWith(
+                USER.email,
+                'token'
+            );
+        });
+    });
+
     describe('Recover Account', () => {
-        it("should do nothing and not throw if the user isn't found", async () => {
-            userService.findByEmail.mockRejectedValue(null);
+        it("should do nothing if the user isn't found", async () => {
+            userService.findByEmail.mockResolvedValue(null);
 
-            const fn = service.recoverAccount('mail');
+            await service.recoverAccount('mail');
 
-            await expect(fn).resolves.not.toThrow();
             expect(tokenService.createPasswordResetToken).not.toHaveBeenCalled();
             expect(mailService.sendAccountRecoveryPrompt).not.toHaveBeenCalled();
         });
