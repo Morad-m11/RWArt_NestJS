@@ -75,12 +75,16 @@ export class TokenService {
     async createPasswordResetToken(userId: number): Promise<string> {
         const token = this.createToken();
 
-        await this.prisma.passwordResetToken.create({
-            data: {
-                tokenHash: this.hashToken(token),
-                expiresAt: this.getFutureDateOffset(this.expiries.passwordReset),
-                userId
-            }
+        const tokenData = {
+            tokenHash: this.hashToken(token),
+            expiresAt: this.getFutureDateOffset(this.expiries.passwordReset),
+            userId
+        };
+
+        await this.prisma.passwordResetToken.upsert({
+            create: tokenData,
+            update: tokenData,
+            where: { userId }
         });
 
         return token;
