@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
 import { TokenService } from './token/token.service';
 
 @Module({
-    imports: [PassportModule, ConfiguredJwtModule, PrismaModule],
+    imports: [ConfiguredJwtModule, PassportModule, PrismaModule],
     controllers: [AuthController],
     providers: [LocalStrategy, AuthService, UserService, MailService, TokenService]
 })

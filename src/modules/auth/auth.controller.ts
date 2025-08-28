@@ -13,6 +13,12 @@ import {
     UseGuards
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+    minutes,
+    seconds,
+    Throttle,
+    ThrottlerGetTrackerFunction
+} from '@nestjs/throttler';
 import { CookieOptions, Request, Response } from 'express';
 import { Config } from 'src/config/validation-schema';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
@@ -20,6 +26,12 @@ import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { RequestWithUser } from 'src/core/auth/local/local.strategy';
 import { Cookies } from 'src/core/decorators/cookie/cookie.decorator';
 import { AuthService } from './auth.service';
+
+export interface SignupRequest {
+    email: string;
+    username: string;
+    password: string;
+}
 
 const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
 
@@ -31,12 +43,14 @@ const refreshCookieOptions: (expiry: number) => CookieOptions = (expiry) => ({
     maxAge: expiry
 });
 
-export interface SignupRequest {
-    email: string;
-    username: string;
-    password: string;
-}
+const trackByEmail: ThrottlerGetTrackerFunction = (req) => {
+    const request = req as Request;
+    const email = (request.body as Record<string, string | undefined>)['email'];
+    const ip = request.ip;
+    return email || ip || request.url;
+};
 
+@Throttle({ long: { limit: 3, ttl: minutes(1) } })
 @Controller('auth')
 export class AuthController {
     private readonly _refreshTokenExpiry: number;
@@ -48,6 +62,7 @@ export class AuthController {
         this._refreshTokenExpiry = config.getOrThrow(Config.REFRESH_TOKEN_EXP);
     }
 
+    @Throttle({ long: { ttl: seconds(60), limit: 10 } })
     @UseGuards(LocalAuthGuard)
     @HttpCode(HttpStatus.OK)
     @Post('login')
@@ -108,6 +123,10 @@ export class AuthController {
         return { valid: true };
     }
 
+    @Throttle({
+        medium: { ttl: minutes(10), limit: 3 },
+        long: { ttl: minutes(10), limit: 1, getTracker: trackByEmail }
+    })
     @HttpCode(HttpStatus.OK)
     @Post('forgot-password')
     async recoverAccount(@Body('email') email: string) {
