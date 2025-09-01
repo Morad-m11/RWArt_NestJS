@@ -1,17 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
+import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
 import { PrismaService } from 'src/core/services/prisma/prisma.service';
 
 @Injectable()
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
-    async create(user: Prisma.UserCreateInput): Promise<User> {
+    async create(user: Prisma.UserCreateInput) {
         return await this.prisma.user.create({ data: user });
     }
 
-    async update(id: User['id'], user: Prisma.UserUpdateInput) {
-        await this.prisma.user.update({ where: { id }, data: user });
+    async createThirdParty(user: JWTDecodedThirdParty): Promise<User> {
+        return await this.prisma.user.create({
+            data: {
+                username: user.username!,
+                email: user.email,
+                picture: user.picture ?? null,
+                thirdPartyAccount: {
+                    create: {
+                        provider: user.provider,
+                        providerId: user.providerId
+                    }
+                }
+            }
+        });
+    }
+
+    async update(id: User['id'], user: Prisma.UserUpdateInput): Promise<User> {
+        return await this.prisma.user.update({ data: user, where: { id } });
     }
 
     async isUniqueUsername(name: string): Promise<boolean> {

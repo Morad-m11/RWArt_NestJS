@@ -16,6 +16,7 @@ interface UserResponse {
     id: number;
     email: string;
     username: string;
+    pictureUrl?: string | null;
 }
 
 @Controller('user')
@@ -58,7 +59,8 @@ export class UserController {
         return {
             id: matchingUser.id,
             email: matchingUser.email,
-            username: matchingUser.username
+            username: matchingUser.username,
+            pictureUrl: matchingUser.picture
         };
     }
 }

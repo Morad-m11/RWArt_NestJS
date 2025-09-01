@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+import { GoogleCustomStrategy } from 'src/core/auth/google/google.strategy';
 import { ConfiguredJwtModule } from 'src/core/auth/jwt/jwt.module';
 import { LocalStrategy } from 'src/core/auth/local/local.strategy';
 import { MailService } from 'src/core/services/mail/mail.service';
@@ -12,6 +13,13 @@ import { TokenService } from './token/token.service';
 @Module({
     imports: [ConfiguredJwtModule, PassportModule, PrismaModule],
     controllers: [AuthController],
-    providers: [LocalStrategy, AuthService, UserService, MailService, TokenService]
+    providers: [
+        LocalStrategy,
+        GoogleCustomStrategy,
+        AuthService,
+        UserService,
+        MailService,
+        TokenService
+    ]
 })
 export class AuthModule {}

@@ -1,11 +1,13 @@
 import {
     BadRequestException,
+    ConflictException,
     ForbiddenException,
     UnauthorizedException
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { User } from '@prisma/client';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
 import { MailService } from 'src/core/services/mail/mail.service';
 import { provideValue } from 'src/core/utils/provide';
 import { UserService } from 'src/modules/user/user.service';
@@ -16,9 +18,11 @@ const USER: User = {
     id: 0,
     email: 'mail',
     username: 'name',
+    picture: 'picUrl',
     passwordHash: 'hash',
     email_verified: true,
-    createdAt: new Date()
+    createdAt: new Date(),
+    updatedAt: new Date()
 };
 
 describe('AuthService', () => {
@@ -56,69 +60,95 @@ describe('AuthService', () => {
         it('should throw 401 if the user is not found', async () => {
             userService.findByName.mockResolvedValue(null);
 
-            const fn = service.validateUser('name', 'password');
+            const fn = service.validateLocalUser('name', 'password');
             await expect(fn).rejects.toThrow(UnauthorizedException);
         });
 
         it('should throw 401 if the password does not match', async () => {
             jest.spyOn(service, 'comparePassword').mockResolvedValue(false);
 
-            const fn = service.validateUser('name', 'password');
+            const fn = service.validateLocalUser('name', 'password');
             await expect(fn).rejects.toThrow(UnauthorizedException);
         });
 
         it('should return the found user on success', async () => {
-            const user = await service.validateUser('name', 'password');
+            const user = await service.validateLocalUser('name', 'password');
             expect(user).toEqual(USER);
         });
 
-        describe('Email Verification', () => {
-            beforeEach(() => {
-                jest.spyOn(userService, 'findByName').mockResolvedValue({
-                    ...USER,
-                    email_verified: false
-                });
+        it('should throw 403 if the email is not verified', async () => {
+            jest.spyOn(userService, 'findByName').mockResolvedValue({
+                ...USER,
+                email_verified: false
             });
 
-            it('should throw 403 if the email is not verified', async () => {
-                const fn = service.validateUser('name', 'password');
-                await expect(fn).rejects.toThrow(ForbiddenException);
-            });
-
-            it('should create a new verification token & send it via mail', async () => {
-                tokenService.createVerificationToken.mockResolvedValue('token');
-
-                const fn = service.validateUser('name', 'password');
-
-                await expect(fn).rejects.toThrow(ForbiddenException);
-                expect(tokenService.createVerificationToken).toHaveBeenCalledWith(
-                    USER.id
-                );
-                expect(mailService.sendVerificationPrompt).toHaveBeenCalledWith(
-                    USER.email,
-                    'token'
-                );
-            });
+            const fn = service.validateLocalUser('name', 'password');
+            await expect(fn).rejects.toThrow(ForbiddenException);
         });
     });
 
     describe('Sign in', () => {
-        it('should call token creation with correct parameters', async () => {
-            await service.signIn(1, 'name', 'IP');
+        describe('Local', () => {
+            it('should call token creation with correct parameters', async () => {
+                await service.signIn(1, 'name', 'IP');
 
-            expect(tokenService.createAccessToken).toHaveBeenCalledWith(1, 'name');
-            expect(tokenService.createRefreshToken).toHaveBeenCalledWith(1, 'IP');
+                expect(tokenService.createAccessToken).toHaveBeenCalledWith(1, 'name');
+                expect(tokenService.createRefreshToken).toHaveBeenCalledWith(1, 'IP');
+            });
+
+            it('should issue access & refresh token', async () => {
+                tokenService.createAccessToken.mockResolvedValue('access');
+                tokenService.createRefreshToken.mockResolvedValue('refresh');
+
+                const result = await service.signIn(1, 'name', 'IP');
+
+                expect(result).toEqual({
+                    accessToken: 'access',
+                    refreshToken: 'refresh'
+                });
+            });
         });
 
-        it('should create access & refresh token and return them', async () => {
-            tokenService.createAccessToken.mockResolvedValue('access');
-            tokenService.createRefreshToken.mockResolvedValue('refresh');
+        describe('Third Party', () => {
+            const ThirdPartyUser: JWTDecodedThirdParty = {
+                username: 'name',
+                email: 'mail',
+                picture: 'pic',
+                provider: 'Google',
+                providerId: 'GoogleUserID'
+            };
 
-            const result = await service.signIn(1, 'name', 'IP');
+            it("should throw 409 if the user doesn't exist and no username was provided", async () => {
+                userService.findByEmail.mockResolvedValue(null);
 
-            expect(result).toEqual({
-                accessToken: 'access',
-                refreshToken: 'refresh'
+                const fn = service.signInThirdParty(
+                    { ...ThirdPartyUser, username: undefined },
+                    'some ip'
+                );
+
+                await expect(fn).rejects.toThrow(ConflictException);
+            });
+
+            it("should create a new user if they don't already exist", async () => {
+                userService.findByEmail.mockResolvedValue(null);
+                userService.createThirdParty.mockResolvedValue(USER);
+
+                await service.signInThirdParty(ThirdPartyUser, 'some ip');
+
+                expect(userService.createThirdParty).toHaveBeenCalledWith(ThirdPartyUser);
+            });
+
+            it('should issue access & refresh token', async () => {
+                userService.findByEmail.mockResolvedValue(USER);
+                tokenService.createAccessToken.mockResolvedValue('access');
+                tokenService.createRefreshToken.mockResolvedValue('refresh');
+
+                const result = await service.signInThirdParty(ThirdPartyUser, 'some ip');
+
+                expect(result).toEqual({
+                    accessToken: 'access',
+                    refreshToken: 'refresh'
+                });
             });
         });
     });

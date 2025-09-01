@@ -21,6 +21,8 @@ import {
 } from '@nestjs/throttler';
 import { CookieOptions, Request, Response } from 'express';
 import { Config } from 'src/config/validation-schema';
+import { GoogleAuthGuard } from 'src/core/auth/google/google.guard';
+import { RequestWithThirdPartyJwt } from 'src/core/auth/google/google.strategy';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { RequestWithUser } from 'src/core/auth/local/local.strategy';
@@ -33,15 +35,7 @@ export interface SignupRequest {
     password: string;
 }
 
-const REFRESH_TOKEN_COOKIE_KEY = 'refresh_token';
-
-const refreshCookieOptions: (expiry: number) => CookieOptions = (expiry) => ({
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: false,
-    path: '/auth',
-    maxAge: expiry
-});
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 const trackByEmail: ThrottlerGetTrackerFunction = (req) => {
     const request = req as Request;
@@ -53,13 +47,21 @@ const trackByEmail: ThrottlerGetTrackerFunction = (req) => {
 @Throttle({ long: { limit: 3, ttl: minutes(1) } })
 @Controller('auth')
 export class AuthController {
-    private readonly _refreshTokenExpiry: number;
+    private readonly _refreshCookieOptions: CookieOptions;
 
     constructor(
         config: ConfigService,
         private authService: AuthService
     ) {
-        this._refreshTokenExpiry = config.getOrThrow(Config.REFRESH_TOKEN_EXP);
+        const refreshExpiry = config.getOrThrow<number>(Config.REFRESH_TOKEN_EXP);
+
+        this._refreshCookieOptions = {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+            path: '/auth',
+            maxAge: refreshExpiry
+        };
     }
 
     @Throttle({ long: { ttl: seconds(60), limit: 10 } })
@@ -78,11 +80,24 @@ export class AuthController {
                 });
             });
 
-        res.cookie(
-            REFRESH_TOKEN_COOKIE_KEY,
-            refreshToken,
-            refreshCookieOptions(this._refreshTokenExpiry)
+        res.cookie(REFRESH_TOKEN_KEY, refreshToken, this._refreshCookieOptions);
+
+        return { accessToken };
+    }
+
+    @UseGuards(GoogleAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    @Post('google')
+    async signInWithGoogle(
+        @Req() req: RequestWithThirdPartyJwt,
+        @Res({ passthrough: true }) res: Response
+    ): Promise<{ accessToken: string }> {
+        const { accessToken, refreshToken } = await this.authService.signInThirdParty(
+            req.user,
+            req.ip ?? '[unknown IP]'
         );
+
+        res.cookie(REFRESH_TOKEN_KEY, refreshToken, this._refreshCookieOptions);
 
         return { accessToken };
     }
@@ -98,7 +113,7 @@ export class AuthController {
     @Post('logout')
     async signOut(
         @Res({ passthrough: true }) res: Response,
-        @Cookies(REFRESH_TOKEN_COOKIE_KEY) refreshToken?: string
+        @Cookies(REFRESH_TOKEN_KEY) refreshToken?: string
     ): Promise<{ message: string }> {
         if (!refreshToken) {
             throw new BadRequestException('Missing refresh token');
@@ -108,10 +123,7 @@ export class AuthController {
             throw new ForbiddenException('Invalid or expired refresh token');
         });
 
-        res.clearCookie(
-            REFRESH_TOKEN_COOKIE_KEY,
-            refreshCookieOptions(this._refreshTokenExpiry)
-        );
+        res.clearCookie(REFRESH_TOKEN_KEY, this._refreshCookieOptions);
 
         return { message: 'Logged out successfully' };
     }
@@ -151,7 +163,7 @@ export class AuthController {
     async refreshToken(
         @Req() req: Request,
         @Res({ passthrough: true }) res: Response,
-        @Cookies(REFRESH_TOKEN_COOKIE_KEY) refreshToken?: string
+        @Cookies(REFRESH_TOKEN_KEY) refreshToken?: string
     ): Promise<{ accessToken: string }> {
         if (!refreshToken) {
             throw new BadRequestException('Missing refresh token');
@@ -160,10 +172,7 @@ export class AuthController {
         const { accessToken, refreshToken: newRefreshToken } = await this.authService
             .refreshAccessToken(refreshToken, req.ip ?? '[unknown IP]')
             .catch((error: Error) => {
-                res.clearCookie(
-                    REFRESH_TOKEN_COOKIE_KEY,
-                    refreshCookieOptions(this._refreshTokenExpiry)
-                );
+                res.clearCookie(REFRESH_TOKEN_KEY, this._refreshCookieOptions);
 
                 throw new UnauthorizedException(
                     'Could not refresh access token',
@@ -171,11 +180,7 @@ export class AuthController {
                 );
             });
 
-        res.cookie(
-            REFRESH_TOKEN_COOKIE_KEY,
-            newRefreshToken,
-            refreshCookieOptions(this._refreshTokenExpiry)
-        );
+        res.cookie(REFRESH_TOKEN_KEY, newRefreshToken, this._refreshCookieOptions);
 
         return { accessToken };
     }

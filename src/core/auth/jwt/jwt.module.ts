@@ -20,7 +20,9 @@ export type JWTDecoded = {
     username: string;
 };
 
-export type RequestWithJwt = Request & { user: JWTDecoded };
+export type RequestWithJwt = Request & {
+    user: JWTDecoded;
+};
 
 export const ConfiguredJwtModule = JwtModule.registerAsync({
     global: true,
