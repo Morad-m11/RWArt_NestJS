@@ -6,7 +6,6 @@ import {
     UnauthorizedException
 } from '@nestjs/common';
 import { User } from '@prisma/client';
-import bcrypt from 'bcrypt';
 import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
 import { MailService } from 'src/core/services/mail/mail.service';
 import { UserService } from '../user/user.service';
@@ -18,8 +17,6 @@ interface JWTTokens {
     refreshToken: string;
 }
 
-const HASH_SALT = 10;
-
 @Injectable()
 export class AuthService {
     constructor(
@@ -28,15 +25,14 @@ export class AuthService {
         private tokenService: TokenService
     ) {}
 
-    async validateLocalUser(name: string, pass: string): Promise<User> {
-        const user = await this.userService.findByName(name);
+    async validateLocalUser(username: string, password: string): Promise<User> {
+        const user = await this.userService.findOneLocal({ username });
 
         if (!user || !user.passwordHash) {
             throw new UnauthorizedException();
         }
 
-        const isCorrectPassword = await this.comparePassword(pass, user.passwordHash);
-        if (!isCorrectPassword) {
+        if (!(await this.userService.comparePassword(password, user.passwordHash))) {
             throw new UnauthorizedException();
         }
 
@@ -60,7 +56,7 @@ export class AuthService {
     }
 
     async signUp(user: SignupRequest): Promise<void> {
-        const dbUser = await this.findOrCreateUser(user);
+        const dbUser = await this.userService.create(user);
         const token = await this.tokenService.createVerificationToken(dbUser.id);
         await this.mailService.sendVerificationPrompt(dbUser.email, token);
     }
@@ -76,12 +72,12 @@ export class AuthService {
                 throw new BadRequestException('Invalid or expired verification token');
             });
 
-        await this.userService.update(userId, { email_verified: true });
+        await this.userService.verifyUser(userId);
         await this.tokenService.deleteVerificationToken(tokenId);
     }
 
     async resendVerification(username: string) {
-        const user = await this.userService.findByName(username);
+        const user = await this.userService.findOneLocal({ username });
 
         if (!user) {
             return;
@@ -92,7 +88,7 @@ export class AuthService {
     }
 
     async recoverAccount(email: string): Promise<void> {
-        const user = await this.userService.findByEmail(email);
+        const user = await this.userService.findOneLocal({ email });
 
         if (!user) {
             return;
@@ -109,10 +105,7 @@ export class AuthService {
                 throw new BadRequestException('Invalid or expired reset token');
             });
 
-        await this.userService.update(userId, {
-            passwordHash: await this.hashPassword(newPassword)
-        });
-
+        await this.userService.updatePassword(userId, newPassword);
         await this.tokenService.deletePasswordResetToken(tokenId);
     }
 
@@ -120,12 +113,24 @@ export class AuthService {
         return await this.tokenService.refreshAccessToken(refreshToken, userIP);
     }
 
-    async hashPassword(rawValue: string): Promise<string> {
-        return await bcrypt.hash(rawValue, HASH_SALT);
-    }
+    private async findOrCreateThirdPartyUser(user: JWTDecodedThirdParty): Promise<User> {
+        const dbUser = await this.userService.findOne({ email: user.email });
 
-    async comparePassword(pass: string, hashed: string): Promise<boolean> {
-        return await bcrypt.compare(pass, hashed);
+        if (dbUser) {
+            return dbUser;
+        }
+
+        if (!user.username) {
+            throw new ConflictException('Username required for new user');
+        }
+
+        return await this.userService.createThirdParty({
+            email: user.email,
+            username: user.username,
+            picture: user.picture,
+            provider: user.provider,
+            providerUserId: user.providerUserId
+        });
     }
 
     private async issueAuthTokens(
@@ -137,33 +142,5 @@ export class AuthService {
             accessToken: await this.tokenService.createAccessToken(id, username),
             refreshToken: await this.tokenService.createRefreshToken(id, userIP)
         };
-    }
-
-    private async findOrCreateUser(user: SignupRequest) {
-        const existingUser = await this.userService.findByEmail(user.email);
-
-        if (!existingUser) {
-            return await this.userService.create({
-                email: user.email,
-                username: user.username,
-                passwordHash: await this.hashPassword(user.password)
-            });
-        }
-
-        return existingUser;
-    }
-
-    private async findOrCreateThirdPartyUser(user: JWTDecodedThirdParty): Promise<User> {
-        const dbUser = await this.userService.findByEmail(user.email);
-
-        if (dbUser) {
-            return dbUser;
-        }
-
-        if (!user.username) {
-            throw new ConflictException('Username required for new user');
-        }
-
-        return await this.userService.createThirdParty(user);
     }
 }

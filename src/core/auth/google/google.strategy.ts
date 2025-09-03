@@ -4,14 +4,14 @@ import { Request } from 'express';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { Strategy } from 'passport-custom';
 
-export type ThirdPartyProvider = 'Google';
+type ThirdPartyProvider = 'Google';
 
 export interface JWTDecodedThirdParty {
     provider: ThirdPartyProvider;
-    providerId: string;
+    providerUserId: string;
     email: string;
-    picture: string | undefined;
-    username: string | undefined;
+    picture: string | null;
+    username?: string | undefined;
 }
 
 export type RequestWithThirdPartyJwt = Request & {
@@ -46,9 +46,9 @@ export class GoogleCustomStrategy extends PassportStrategy(Strategy, 'google') {
 
         return {
             provider: 'Google',
-            providerId: googleUser.sub,
+            providerUserId: googleUser.sub,
             email: googleUser.email,
-            picture: googleUser.picture,
+            picture: googleUser.picture ?? null,
             username
         };
     }

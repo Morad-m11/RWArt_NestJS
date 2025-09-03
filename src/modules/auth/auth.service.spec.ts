@@ -53,19 +53,19 @@ describe('AuthService', () => {
 
     describe('User Validation', () => {
         beforeEach(() => {
-            userService.findByName.mockResolvedValue(USER);
-            jest.spyOn(service, 'comparePassword').mockResolvedValue(true);
+            userService.findOneLocal.mockResolvedValue(USER);
+            userService.comparePassword.mockResolvedValue(true);
         });
 
         it('should throw 401 if the user is not found', async () => {
-            userService.findByName.mockResolvedValue(null);
+            userService.findOneLocal.mockResolvedValue(null);
 
             const fn = service.validateLocalUser('name', 'password');
             await expect(fn).rejects.toThrow(UnauthorizedException);
         });
 
         it('should throw 401 if the password does not match', async () => {
-            jest.spyOn(service, 'comparePassword').mockResolvedValue(false);
+            userService.comparePassword.mockResolvedValue(false);
 
             const fn = service.validateLocalUser('name', 'password');
             await expect(fn).rejects.toThrow(UnauthorizedException);
@@ -77,7 +77,7 @@ describe('AuthService', () => {
         });
 
         it('should throw 403 if the email is not verified', async () => {
-            jest.spyOn(userService, 'findByName').mockResolvedValue({
+            jest.spyOn(userService, 'findOneLocal').mockResolvedValue({
                 ...USER,
                 email_verified: false
             });
@@ -115,11 +115,11 @@ describe('AuthService', () => {
                 email: 'mail',
                 picture: 'pic',
                 provider: 'Google',
-                providerId: 'GoogleUserID'
+                providerUserId: 'GoogleUserID'
             };
 
             it("should throw 409 if the user doesn't exist and no username was provided", async () => {
-                userService.findByEmail.mockResolvedValue(null);
+                userService.findOneLocal.mockResolvedValue(null);
 
                 const fn = service.signInThirdParty(
                     { ...ThirdPartyUser, username: undefined },
@@ -130,7 +130,7 @@ describe('AuthService', () => {
             });
 
             it("should create a new user if they don't already exist", async () => {
-                userService.findByEmail.mockResolvedValue(null);
+                userService.findOneLocal.mockResolvedValue(null);
                 userService.createThirdParty.mockResolvedValue(USER);
 
                 await service.signInThirdParty(ThirdPartyUser, 'some ip');
@@ -139,7 +139,7 @@ describe('AuthService', () => {
             });
 
             it('should issue access & refresh token', async () => {
-                userService.findByEmail.mockResolvedValue(USER);
+                userService.findOne.mockResolvedValue(USER);
                 tokenService.createAccessToken.mockResolvedValue('access');
                 tokenService.createRefreshToken.mockResolvedValue('refresh');
 
@@ -154,100 +154,19 @@ describe('AuthService', () => {
     });
 
     describe('Sign up', () => {
-        describe('User exists', () => {
-            it('should not create a new user', async () => {
-                userService.findByEmail.mockResolvedValue(USER);
+        it('should create a user, verification token & send it via mail', async () => {
+            userService.create.mockResolvedValue(USER);
+            tokenService.createVerificationToken.mockResolvedValue('token');
+            const user = { email: 'mail', username: 'name', password: 'pass' };
 
-                await service.signUp({
-                    email: USER.email,
-                    username: 'name',
-                    password: 'pass'
-                });
+            await service.signUp(user);
 
-                expect(userService.create).not.toHaveBeenCalled();
-            });
-
-            it('should create a verification token with the existing users ID', async () => {
-                userService.findByEmail.mockResolvedValue(USER);
-
-                await service.signUp({
-                    email: USER.email,
-                    username: 'name',
-                    password: 'pass'
-                });
-
-                expect(tokenService.createVerificationToken).toHaveBeenCalledWith(
-                    USER.id
-                );
-            });
-
-            it('should send a verification mail', async () => {
-                userService.findByEmail.mockResolvedValue(USER);
-                tokenService.createVerificationToken.mockResolvedValue('token');
-
-                await service.signUp({
-                    email: USER.email,
-                    username: 'name',
-                    password: 'pass'
-                });
-
-                expect(mailService.sendVerificationPrompt).toHaveBeenCalledWith(
-                    USER.email,
-                    'token'
-                );
-            });
-        });
-
-        describe("User doesn't exist", () => {
-            it('should create a user with a hashed password', async () => {
-                userService.findByEmail.mockResolvedValue(null);
-                userService.create.mockResolvedValue(USER);
-                jest.spyOn(service, 'hashPassword').mockResolvedValue('hashed');
-
-                await service.signUp({
-                    email: 'mail',
-                    username: 'name',
-                    password: 'pass'
-                });
-
-                expect(userService.create).toHaveBeenCalledWith({
-                    email: 'mail',
-                    username: 'name',
-                    passwordHash: 'hashed'
-                });
-            });
-
-            it('should create a verification token', async () => {
-                userService.findByEmail.mockResolvedValue(null);
-                userService.create.mockResolvedValue(USER);
-
-                await service.signUp({
-                    email: 'mail',
-                    username: 'name',
-                    password: 'pass'
-                });
-
-                expect(tokenService.createVerificationToken).toHaveBeenCalledWith(
-                    USER.id
-                );
-            });
-
-            it('should send a verification mail', async () => {
-                userService.findByEmail.mockResolvedValue(null);
-                userService.create.mockResolvedValue(USER);
-                tokenService.createVerificationToken.mockResolvedValue('token');
-
-                await service.signUp({
-                    email: 'mail',
-                    username: 'name',
-                    password: 'pass'
-                });
-
-                expect(mailService.sendVerificationPrompt).toHaveBeenCalledWith(
-                    USER.email,
-                    'token'
-                );
-            });
+            expect(userService.create).toHaveBeenCalledWith(user);
+            expect(tokenService.createVerificationToken).toHaveBeenCalledWith(USER.id);
+            expect(mailService.sendVerificationPrompt).toHaveBeenCalledWith(
+                USER.email,
+                'token'
+            );
         });
     });
 
@@ -270,7 +189,7 @@ describe('AuthService', () => {
             await expect(fn).rejects.toThrow(BadRequestException);
         });
 
-        it('should call to update the users verification status', async () => {
+        it('should call to verify the user', async () => {
             tokenService.findValidVerificationToken.mockResolvedValue({
                 userId: 1,
                 tokenId: 2
@@ -278,9 +197,7 @@ describe('AuthService', () => {
 
             await service.verifyAccount('token');
 
-            expect(userService.update).toHaveBeenCalledWith(1, {
-                email_verified: true
-            });
+            expect(userService.verifyUser).toHaveBeenCalledWith(1);
         });
 
         it('should call to delete the found verification token', async () => {
@@ -297,7 +214,7 @@ describe('AuthService', () => {
 
     describe('Resend Verification', () => {
         it('should look up the user by name and do nothing if not found', async () => {
-            userService.findByName.mockResolvedValue(null);
+            userService.findOneLocal.mockResolvedValue(null);
 
             await service.resendVerification('user');
 
@@ -306,7 +223,7 @@ describe('AuthService', () => {
         });
 
         it('should create a new verification token and send it via mail', async () => {
-            userService.findByName.mockResolvedValue(USER);
+            userService.findOneLocal.mockResolvedValue(USER);
             tokenService.createVerificationToken.mockResolvedValue('token');
 
             await service.resendVerification('user');
@@ -321,7 +238,7 @@ describe('AuthService', () => {
 
     describe('Recover Account', () => {
         it("should do nothing if the user isn't found", async () => {
-            userService.findByEmail.mockResolvedValue(null);
+            userService.findOneLocal.mockResolvedValue(null);
 
             await service.recoverAccount('mail');
 
@@ -330,7 +247,7 @@ describe('AuthService', () => {
         });
 
         it('should call to create a password token', async () => {
-            userService.findByEmail.mockResolvedValue(USER);
+            userService.findOneLocal.mockResolvedValue(USER);
 
             await service.recoverAccount('mail');
 
@@ -338,7 +255,7 @@ describe('AuthService', () => {
         });
 
         it('should call to send a recovery mail', async () => {
-            userService.findByEmail.mockResolvedValue(USER);
+            userService.findOneLocal.mockResolvedValue(USER);
             tokenService.createPasswordResetToken.mockResolvedValue('token');
 
             await service.recoverAccount('mail');
@@ -360,18 +277,15 @@ describe('AuthService', () => {
             await expect(fn).rejects.toThrow(BadRequestException);
         });
 
-        it('should call to update the users password with a hashed version', async () => {
+        it('should call to update the users password', async () => {
             tokenService.findValidPasswordResetToken.mockResolvedValue({
                 userId: 1,
                 tokenId: 2
             });
-            jest.spyOn(service, 'hashPassword').mockResolvedValue('hashed');
 
             await service.resetPassword('token', 'new password');
 
-            expect(userService.update).toHaveBeenCalledWith(1, {
-                passwordHash: 'hashed'
-            });
+            expect(userService.updatePassword).toHaveBeenCalledWith(1, 'new password');
         });
 
         it('should call to delete the reset token', async () => {

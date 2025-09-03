@@ -25,23 +25,14 @@ export class UserController {
 
     @Get('check-unique')
     async checkUniqueProperties(
-        @Query('username') username: string,
-        @Query('email') email: string
+        @Query('username') username: string
     ): Promise<{ unique: true }> {
-        if ((!username && !email) || (username && email)) {
-            throw new BadRequestException(
-                'Exactly one parameter (username or email) must be provided'
-            );
+        if (!username) {
+            throw new BadRequestException('Missing parameter username');
         }
 
-        const isUnique = username
-            ? await this.userService.isUniqueUsername(username)
-            : await this.userService.isUniqueEmail(email);
-
-        if (!isUnique) {
-            throw new ConflictException(
-                `${username ? 'Username' : 'Email'} is not unique`
-            );
+        if (await this.userService.exists({ username })) {
+            throw new ConflictException('Username is not unique');
         }
 
         return { unique: true };
@@ -50,7 +41,7 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     async getProfile(@Req() req: RequestWithJwt): Promise<UserResponse> {
-        const matchingUser = await this.userService.findById(req.user.userId);
+        const matchingUser = await this.userService.findOne({ id: req.user.userId });
 
         if (!matchingUser) {
             throw new NotFoundException(`User with ID ${req.user.userId} not found`);

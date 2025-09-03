@@ -1,65 +1,107 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
-import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
+import { ThirdPartyAccount, User } from '@prisma/client';
+import bcrypt from 'bcrypt';
 import { PrismaService } from 'src/core/services/prisma/prisma.service';
+
+const HASH_SALT = 10;
+
+type CreateArgs = Pick<User, 'email' | 'username'> & {
+    password: string;
+};
+
+type CreateThirdPartyArgs = Pick<User, 'email' | 'username' | 'picture'> &
+    Pick<ThirdPartyAccount, 'provider' | 'providerUserId'>;
+
+type FindLocalFilters = Pick<Partial<User>, 'id' | 'email' | 'username'>;
 
 @Injectable()
 export class UserService {
     constructor(private prisma: PrismaService) {}
 
-    async create(user: Prisma.UserCreateInput) {
-        return await this.prisma.user.create({ data: user });
-    }
-
-    async createThirdParty(user: JWTDecodedThirdParty): Promise<User> {
+    async create(user: CreateArgs): Promise<User> {
         return await this.prisma.user.create({
             data: {
-                username: user.username!,
                 email: user.email,
+                username: user.username,
+                passwordHash: await this.hashPassword(user.password)
+            }
+        });
+    }
+
+    async createThirdParty(user: CreateThirdPartyArgs): Promise<User> {
+        return await this.prisma.user.create({
+            data: {
+                email: user.email,
+                username: user.username,
                 picture: user.picture ?? null,
                 thirdPartyAccount: {
                     create: {
                         provider: user.provider,
-                        providerId: user.providerId
+                        providerUserId: user.providerUserId
                     }
                 }
             }
         });
     }
 
-    async update(id: User['id'], user: Prisma.UserUpdateInput): Promise<User> {
-        return await this.prisma.user.update({ data: user, where: { id } });
+    async updatePassword(id: User['id'], password: string): Promise<void> {
+        await this.prisma.user.update({
+            data: { passwordHash: await this.hashPassword(password) },
+            where: { id }
+        });
     }
 
-    async isUniqueUsername(name: string): Promise<boolean> {
+    async verifyUser(id: User['id']): Promise<User> {
+        return await this.prisma.user.update({
+            data: { email_verified: true },
+            where: { id }
+        });
+    }
+
+    async exists({ id, email, username }: FindLocalFilters): Promise<boolean> {
         const count = await this.prisma.user.count({
-            where: { username: { equals: name, mode: 'insensitive' } }
+            where: {
+                ...(id ? { id } : {}),
+                ...(email ? { email: { equals: email, mode: 'insensitive' } } : {}),
+                ...(username
+                    ? { username: { equals: username, mode: 'insensitive' } }
+                    : {})
+            }
         });
 
-        return count === 0;
+        return count > 0;
     }
 
-    async isUniqueEmail(email: string): Promise<boolean> {
-        const count = await this.prisma.user.count({
-            where: { email: { equals: email, mode: 'insensitive' } }
-        });
-
-        return count === 0;
-    }
-
-    async findById(id: number): Promise<User | null> {
-        return await this.prisma.user.findUnique({ where: { id } });
-    }
-
-    async findByName(username: string): Promise<User | null> {
+    async findOne({ id, email, username }: FindLocalFilters): Promise<User | null> {
         return await this.prisma.user.findFirst({
-            where: { username: { equals: username, mode: 'insensitive' } }
+            where: {
+                ...(id ? { id } : {}),
+                ...(email ? { email: { equals: email, mode: 'insensitive' } } : {}),
+                ...(username
+                    ? { username: { equals: username, mode: 'insensitive' } }
+                    : {})
+            }
         });
     }
 
-    async findByEmail(email: string): Promise<User | null> {
+    async findOneLocal({ id, email, username }: FindLocalFilters): Promise<User | null> {
         return await this.prisma.user.findFirst({
-            where: { email: { equals: email, mode: 'insensitive' } }
+            where: {
+                ...(id ? { id } : {}),
+                ...(email ? { email: { equals: email, mode: 'insensitive' } } : {}),
+                ...(username
+                    ? { username: { equals: username, mode: 'insensitive' } }
+                    : {}),
+                thirdPartyAccount: null
+            }
         });
+    }
+
+    async comparePassword(pass: string, hashed: string): Promise<boolean> {
+        return await bcrypt.compare(pass, hashed);
+    }
+
+    private async hashPassword(rawValue: string): Promise<string> {
+        return await bcrypt.hash(rawValue, HASH_SALT);
     }
 }
