@@ -13,12 +13,7 @@ import {
     UseGuards
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-    minutes,
-    seconds,
-    Throttle,
-    ThrottlerGetTrackerFunction
-} from '@nestjs/throttler';
+import { minutes, Throttle, ThrottlerGetTrackerFunction } from '@nestjs/throttler';
 import { CookieOptions, Request, Response } from 'express';
 import { Config } from 'src/config/validation-schema';
 import { GoogleAuthGuard } from 'src/core/auth/google/google.guard';
@@ -39,12 +34,11 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 
 const trackByEmail: ThrottlerGetTrackerFunction = (req) => {
     const request = req as Request;
-    const email = (request.body as Record<string, string | undefined>)['email'];
-    const ip = request.ip;
-    return email || ip || request.url;
+    const body = request.body as Record<string, string | undefined>;
+    return body['email'] || request.ip || request.url;
 };
 
-@Throttle({ long: { limit: 3, ttl: minutes(1) } })
+@Throttle({ long: { ttl: minutes(1), limit: 3 } })
 @Controller('auth')
 export class AuthController {
     private readonly _refreshCookieOptions: CookieOptions;
@@ -64,7 +58,7 @@ export class AuthController {
         };
     }
 
-    @Throttle({ long: { ttl: seconds(60), limit: 10 } })
+    @Throttle({ long: { ttl: minutes(1), limit: 5 } })
     @UseGuards(LocalAuthGuard)
     @HttpCode(HttpStatus.OK)
     @Post('login')

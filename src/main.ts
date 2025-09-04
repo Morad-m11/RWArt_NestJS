@@ -11,7 +11,8 @@ async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
         cors: {
             credentials: true,
-            origin: 'http://localhost:4200'
+            origin: 'http://localhost:4200',
+            exposedHeaders: ['Retry-After-Long', 'Retry-After-Medium']
         },
         abortOnError: false
     });
