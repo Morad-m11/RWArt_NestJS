@@ -1,5 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Req,
+    UseGuards
+} from '@nestjs/common';
 import { Post as PostEntity } from '@prisma/client';
+import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
+import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostService } from './post.service';
@@ -8,9 +20,10 @@ import { PostService } from './post.service';
 export class PostController {
     constructor(private readonly postService: PostService) {}
 
+    @UseGuards(JwtAuthGuard)
     @Post()
-    create(@Body() createPostDto: CreatePostDto) {
-        return this.postService.create(createPostDto);
+    async create(@Req() req: RequestWithJwt, @Body() post: CreatePostDto) {
+        return await this.postService.create(req.user.userId, post);
     }
 
     @Get('featured')

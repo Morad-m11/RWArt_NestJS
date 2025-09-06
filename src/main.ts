@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -19,6 +20,7 @@ async function bootstrap(): Promise<void> {
 
     app.use(cookieParser());
     app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new LoggingInterceptor());
     app.useGlobalFilters(new PrismaClientExceptionFilter());
 
