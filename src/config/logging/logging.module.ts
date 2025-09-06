@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonModule, utilities } from 'nest-winston';
 import winston from 'winston';
 import winstonDailyRotate from 'winston-daily-rotate-file';
-import { Config } from '../validation-schema';
+import { Config } from '../env-validation';
 
 type PrintfCallback = Parameters<typeof winston.format.printf>[0];
 type PrintfParameters = Parameters<PrintfCallback>[0];
@@ -46,7 +46,7 @@ const consoleConfig = (level: string) => {
     });
 };
 
-export const ConfiguredWinstonLoggerModule = WinstonModule.forRootAsync({
+export const ConfiguredLoggerModule = WinstonModule.forRootAsync({
     inject: [ConfigService],
     useFactory: (config: ConfigService) => {
         const path = config.getOrThrow<string>(Config.LOG_PATH);

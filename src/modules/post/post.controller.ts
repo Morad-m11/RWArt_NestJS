@@ -4,26 +4,48 @@ import {
     Delete,
     Get,
     Param,
+    ParseFilePipeBuilder,
     Patch,
     Post,
-    Req,
-    UseGuards
+    UploadedFile,
+    UseGuards,
+    UseInterceptors
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from '@prisma/client';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
-import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
+import { UserJWT } from 'src/core/auth/jwt/jwt.module';
+import { User } from 'src/shared/user/user.decorator';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { ImageUploadService } from './image-upload/image-upload.service';
 import { PostService } from './post.service';
 
 @Controller('post')
 export class PostController {
-    constructor(private readonly postService: PostService) {}
+    constructor(
+        private readonly imageService: ImageUploadService,
+        private readonly postService: PostService
+    ) {}
 
     @UseGuards(JwtAuthGuard)
+    @UseInterceptors(
+        FileInterceptor('image', { limits: { files: 1, fileSize: 20 * 1e6 } })
+    )
     @Post()
-    async create(@Req() req: RequestWithJwt, @Body() post: CreatePostDto) {
-        return await this.postService.create(req.user.userId, post);
+    async create(
+        @User() user: UserJWT,
+        @UploadedFile(
+            new ParseFilePipeBuilder()
+                .addFileTypeValidator({ fileType: /jpeg|png|webp|gif/ })
+                .addMaxSizeValidator({ maxSize: 20 * 1e6 })
+                .build()
+        )
+        image: Express.Multer.File,
+        @Body() post: CreatePostDto
+    ) {
+        const imageUrl = await this.imageService.upload(image);
+        await this.postService.create({ authorId: user.id, imageUrl, ...post });
     }
 
     @Get('featured')

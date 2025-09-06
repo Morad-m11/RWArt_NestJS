@@ -5,11 +5,11 @@ import {
     Get,
     NotFoundException,
     Query,
-    Req,
     UseGuards
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
-import { RequestWithJwt } from 'src/core/auth/jwt/jwt.module';
+import { UserJWT } from 'src/core/auth/jwt/jwt.module';
+import { User } from 'src/shared/user/user.decorator';
 import { UserService } from './user.service';
 
 interface UserResponse {
@@ -40,11 +40,11 @@ export class UserController {
 
     @UseGuards(JwtAuthGuard)
     @Get('profile')
-    async getProfile(@Req() req: RequestWithJwt): Promise<UserResponse> {
-        const matchingUser = await this.userService.findOne({ id: req.user.userId });
+    async getProfile(@User() user: UserJWT): Promise<UserResponse> {
+        const matchingUser = await this.userService.findOne({ id: user.id });
 
         if (!matchingUser) {
-            throw new NotFoundException(`User with ID ${req.user.userId} not found`);
+            throw new NotFoundException(`User with ID ${user.id} not found`);
         }
 
         return {

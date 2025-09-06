@@ -1,6 +1,5 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
-import { Request } from 'express';
 
 export interface JWTPayload {
     /** user id */
@@ -15,13 +14,9 @@ export interface JWTPayload {
     exp: number;
 }
 
-export type JWTDecoded = {
-    userId: number;
+export type UserJWT = {
+    id: number;
     username: string;
-};
-
-export type RequestWithJwt = Request & {
-    user: JWTDecoded;
 };
 
 export const ConfiguredJwtModule = JwtModule.registerAsync({

@@ -1,27 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { Post as PostEntity } from '@prisma/client';
 import { PrismaService } from 'src/core/services/prisma/prisma.service';
-import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
+type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageUrl'>;
 type Post = PostEntity & { author: { username: string } };
 
 @Injectable()
 export class PostService {
     constructor(private prisma: PrismaService) {}
 
-    async create(authorId: number, post: CreatePostDto): Promise<Post> {
-        return await this.prisma.post.create({
-            data: {
-                title: post.title,
-                description: post.description,
-                imageUrl: post.imageUrl,
-                authorId
-            },
-            include: {
-                author: { select: { username: true } }
-            }
-        });
+    async create(post: CreatePost): Promise<void> {
+        await this.prisma.post.create({ data: post });
     }
 
     /** Returns a random selection of posts */

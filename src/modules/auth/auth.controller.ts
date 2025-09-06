@@ -15,7 +15,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { minutes, Throttle, ThrottlerGetTrackerFunction } from '@nestjs/throttler';
 import { CookieOptions, Request, Response } from 'express';
-import { Config } from 'src/config/validation-schema';
+import { Config } from 'src/config/env-validation';
 import { GoogleAuthGuard } from 'src/core/auth/google/google.guard';
 import { RequestWithThirdPartyJwt } from 'src/core/auth/google/google.strategy';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
