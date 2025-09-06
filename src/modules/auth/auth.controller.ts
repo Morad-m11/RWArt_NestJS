@@ -15,13 +15,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { minutes, Throttle, ThrottlerGetTrackerFunction } from '@nestjs/throttler';
 import { CookieOptions, Request, Response } from 'express';
-import { Config } from 'src/config/env-validation';
+import { Cookies } from 'src/common/decorators/cookie.decorator';
 import { GoogleAuthGuard } from 'src/core/auth/google/google.guard';
 import { RequestWithThirdPartyJwt } from 'src/core/auth/google/google.strategy';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { RequestWithUser } from 'src/core/auth/local/local.strategy';
-import { Cookies } from 'src/core/decorators/cookie/cookie.decorator';
+import { Config } from 'src/core/config/env-validation';
 import { AuthService } from './auth.service';
 
 export interface SignupRequest {

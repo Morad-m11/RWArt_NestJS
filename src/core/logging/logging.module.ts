@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonModule, utilities } from 'nest-winston';
 import winston from 'winston';
 import winstonDailyRotate from 'winston-daily-rotate-file';
-import { Config } from '../env-validation';
+import { Config } from '../config/env-validation';
 
 type PrintfCallback = Parameters<typeof winston.format.printf>[0];
 type PrintfParameters = Parameters<PrintfCallback>[0];

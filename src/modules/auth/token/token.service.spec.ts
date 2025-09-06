@@ -1,9 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MailService } from 'src/core/services/mail/mail.service';
-import { PrismaService } from 'src/core/services/prisma/prisma.service';
-import { provideEmpty, provideValue } from 'src/core/utils/provide';
+import { MailService } from 'src/common/mail/mail.service';
+import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { provideEmpty, provideValue } from 'src/common/test-provide';
 import { TokenService } from './token.service';
 
 describe('TokenService', () => {

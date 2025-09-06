@@ -6,8 +6,8 @@ import {
     UnauthorizedException
 } from '@nestjs/common';
 import { User } from '@prisma/client';
+import { MailService } from 'src/common/mail/mail.service';
 import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
-import { MailService } from 'src/core/services/mail/mail.service';
 import { UserService } from '../user/user.service';
 import { SignupRequest } from './auth.controller';
 import { TokenService } from './token/token.service';

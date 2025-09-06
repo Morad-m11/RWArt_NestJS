@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RefreshToken, User } from '@prisma/client';
 import crypto from 'crypto';
-import { Config } from 'src/config/env-validation';
-import { MailService } from 'src/core/services/mail/mail.service';
-import { PrismaService } from 'src/core/services/prisma/prisma.service';
+import { MailService } from 'src/common/mail/mail.service';
+import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { Config } from 'src/core/config/env-validation';
 
 @Injectable()
 export class TokenService {

@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { provideValue } from 'src/core/utils/provide';
+import { provideValue } from 'src/common/test-provide';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 

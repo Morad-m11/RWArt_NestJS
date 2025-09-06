@@ -1,4 +1,5 @@
 import {
+    BadGatewayException,
     Body,
     Controller,
     Delete,
@@ -13,18 +14,18 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from '@prisma/client';
+import { User } from 'src/common/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { UserJWT } from 'src/core/auth/jwt/jwt.module';
-import { User } from 'src/shared/user/user.decorator';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { ImageUploadService } from './image-upload/image-upload.service';
+import { ImageService } from './image-upload/image.service';
 import { PostService } from './post.service';
 
 @Controller('post')
 export class PostController {
     constructor(
-        private readonly imageService: ImageUploadService,
+        private readonly imageService: ImageService,
         private readonly postService: PostService
     ) {}
 
@@ -44,8 +45,11 @@ export class PostController {
         image: Express.Multer.File,
         @Body() post: CreatePostDto
     ) {
-        const imageUrl = await this.imageService.upload(image);
-        await this.postService.create({ authorId: user.id, imageUrl, ...post });
+        const imageUrl = await this.imageService.upload(image).catch((error) => {
+            throw new BadGatewayException('Image upload failed', { cause: error });
+        });
+
+        await this.postService.create({ ...post, authorId: user.id, imageUrl });
     }
 
     @Get('featured')

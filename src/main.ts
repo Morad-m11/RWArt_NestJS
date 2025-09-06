@@ -5,8 +5,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
-import { PrismaClientExceptionFilter } from './core/filters/prisma/prisma.filter';
-import { LoggingInterceptor } from './core/interceptors/logging/logging.interceptor';
+import { PrismaClientExceptionFilter } from './common/prisma/filter/prisma.filter';
+import { LoggingInterceptor } from './core/logging/interceptor/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -20,8 +20,8 @@ async function bootstrap(): Promise<void> {
 
     app.use(cookieParser());
     app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalInterceptors(new LoggingInterceptor());
+    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalFilters(new PrismaClientExceptionFilter());
 
     const configService = app.get(ConfigService);

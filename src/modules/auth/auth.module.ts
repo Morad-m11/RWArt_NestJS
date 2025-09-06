@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+import { MailService } from 'src/common/mail/mail.service';
+import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { GoogleCustomStrategy } from 'src/core/auth/google/google.strategy';
 import { ConfiguredJwtModule } from 'src/core/auth/jwt/jwt.module';
 import { LocalStrategy } from 'src/core/auth/local/local.strategy';
-import { MailService } from 'src/core/services/mail/mail.service';
-import { PrismaModule } from 'src/core/services/prisma/prisma.module';
 import { UserService } from '../user/user.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';

@@ -16,7 +16,11 @@ export enum Config {
     PASSWORD_RESET_EXP = 'PASSWORD_RESET_EXP',
 
     LOG_PATH = 'LOG_PATH',
-    LOG_LEVEL = 'LOG_LEVEL'
+    LOG_LEVEL = 'LOG_LEVEL',
+
+    CLOUD_NAME = 'CLOUD_NAME',
+    API_KEY = 'API_KEY',
+    API_SECRET = 'API_SECRET'
 }
 
 export const ConfigValidationSchema = Joi.object({
@@ -32,5 +36,9 @@ export const ConfigValidationSchema = Joi.object({
     PASSWORD_RESET_EXP: Joi.custom(parseDuration).default(parseDuration('10m')),
 
     LOG_PATH: Joi.string().default('./logs'),
-    LOG_LEVEL: Joi.valid(...PINO_LOG_lEVELS).default('info')
+    LOG_LEVEL: Joi.valid(...PINO_LOG_lEVELS).default('info'),
+
+    CLOUD_NAME: Joi.string().required(),
+    API_KEY: Joi.string().required(),
+    API_SECRET: Joi.string().required()
 });

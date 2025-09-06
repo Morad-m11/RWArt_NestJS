@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Post as PostEntity } from '@prisma/client';
-import { PrismaService } from 'src/core/services/prisma/prisma.service';
+import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageUrl'>;

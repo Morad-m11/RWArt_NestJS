@@ -7,9 +7,9 @@ import {
     Query,
     UseGuards
 } from '@nestjs/common';
+import { User } from 'src/common/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { UserJWT } from 'src/core/auth/jwt/jwt.module';
-import { User } from 'src/shared/user/user.decorator';
 import { UserService } from './user.service';
 
 interface UserResponse {

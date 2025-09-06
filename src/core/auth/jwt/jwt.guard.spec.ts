@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
-import { provideValue } from 'src/core/utils/provide';
+import { provideValue } from 'src/common/test-provide';
 import { JwtAuthGuard } from './jwt.guard';
 
 describe('AuthGuard', () => {

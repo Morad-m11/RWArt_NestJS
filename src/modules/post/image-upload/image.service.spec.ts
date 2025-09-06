@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { CloudinaryService } from 'src/common/cloudinary/cloudinary.service';
 import { provideValue } from 'src/common/test-provide';
-import { PostService } from './post.service';
+import { ImageService } from './image.service';
 
-describe('PostService', () => {
-    let service: PostService;
+describe('ImageUploadService', () => {
+    let service: ImageService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            providers: [PostService, provideValue(PrismaService)]
+            providers: [ImageService, provideValue(CloudinaryService)]
         }).compile();
 
-        service = module.get<PostService>(PostService);
+        service = module.get<ImageService>(ImageService);
     });
 
     it('should be defined', () => {

@@ -7,9 +7,9 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { User } from '@prisma/client';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { MailService } from 'src/common/mail/mail.service';
+import { provideValue } from 'src/common/test-provide';
 import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
-import { MailService } from 'src/core/services/mail/mail.service';
-import { provideValue } from 'src/core/utils/provide';
 import { UserService } from 'src/modules/user/user.service';
 import { AuthService } from './auth.service';
 import { TokenService } from './token/token.service';

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ThirdPartyAccount, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { PrismaService } from 'src/core/services/prisma/prisma.service';
+import { PrismaService } from 'src/common/prisma/service/prisma.service';
 
 const HASH_SALT = 10;
 
