@@ -39,8 +39,12 @@ export class PostService {
         return [...lastWeekPosts, ...additionalPosts];
     }
 
-    findAll() {
-        return `This action returns all post`;
+    async findAll(options: { count: number; sort: 'asc' | 'desc' }): Promise<Post[]> {
+        return await this.prisma.post.findMany({
+            take: options.count,
+            orderBy: { createdAt: options.sort },
+            include: { author: { select: { username: true } } }
+        });
     }
 
     findOne(id: number) {

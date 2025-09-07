@@ -19,6 +19,7 @@ import { User } from 'src/common/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { UserJWT } from 'src/core/auth/jwt/jwt.module';
 import { CreatePostDto } from './dto/create-post.dto';
+import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ImageService } from './image-upload/image.service';
 import { PostService } from './post.service';
@@ -59,8 +60,8 @@ export class PostController {
     }
 
     @Get()
-    findAll() {
-        return this.postService.findAll();
+    findAll(@Query() query: GetPostsDto) {
+        return this.postService.findAll({ count: query.count, sort: query.sort });
     }
 
     @Get(':id')

@@ -27,25 +27,29 @@ async function main() {
                 authorId: 1,
                 title: 'Post Title 1',
                 description: 'Post Description 1',
-                imageId: 'main-sample'
+                imageId: 'main-sample',
+                createdAt: new Date(Date.UTC(2025, 0, 1))
             },
             {
                 authorId: 1,
                 title: 'Post Title 2',
                 description: 'Post Description 2',
-                imageId: 'cld-sample-5'
+                imageId: 'cld-sample-5',
+                createdAt: new Date(Date.UTC(2025, 0, 2))
             },
             {
                 authorId: 2,
                 title: 'Post Title 3',
                 description: 'Post Description 3',
-                imageId: 'cld-sample-3'
+                imageId: 'cld-sample-3',
+                createdAt: new Date(Date.UTC(2025, 0, 3))
             },
             {
                 authorId: 2,
                 title: 'Post Title 4',
                 description: 'Post Description 4',
-                imageId: 'cld-sample'
+                imageId: 'cld-sample',
+                createdAt: new Date(Date.UTC(2025, 0, 4))
             }
         ]
     });
