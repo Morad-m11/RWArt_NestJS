@@ -7,6 +7,6 @@ export class ImageService {
 
     async upload(image: Express.Multer.File): Promise<string> {
         const response = await this.cloudinary.uploadFile(image);
-        return response.secure_url;
+        return response.public_id;
     }
 }

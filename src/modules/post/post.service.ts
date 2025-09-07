@@ -3,7 +3,7 @@ import { Post as PostEntity } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 
-type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageUrl'>;
+type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageId'>;
 type Post = PostEntity & { author: { username: string } };
 
 @Injectable()
@@ -15,7 +15,7 @@ export class PostService {
     }
 
     /** Returns a random selection of posts */
-    async getFeatured(count: number): Promise<Post[]> {
+    async getFeatured(count = 2): Promise<Post[]> {
         const now = new Date();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         const lastWeek = new Date(now.getTime() - sevenDays);

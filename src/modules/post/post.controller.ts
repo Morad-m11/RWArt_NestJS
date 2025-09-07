@@ -8,6 +8,7 @@ import {
     ParseFilePipeBuilder,
     Patch,
     Post,
+    Query,
     UploadedFile,
     UseGuards,
     UseInterceptors
@@ -45,16 +46,16 @@ export class PostController {
         image: Express.Multer.File,
         @Body() post: CreatePostDto
     ) {
-        const imageUrl = await this.imageService.upload(image).catch((error) => {
+        const imageId = await this.imageService.upload(image).catch((error) => {
             throw new BadGatewayException('Image upload failed', { cause: error });
         });
 
-        await this.postService.create({ ...post, authorId: user.id, imageUrl });
+        await this.postService.create({ ...post, authorId: user.id, imageId });
     }
 
     @Get('featured')
-    async getFeatured(): Promise<PostEntity[]> {
-        return await this.postService.getFeatured(2);
+    async getFeatured(@Query('count') count?: number): Promise<PostEntity[]> {
+        return await this.postService.getFeatured(count);
     }
 
     @Get()
