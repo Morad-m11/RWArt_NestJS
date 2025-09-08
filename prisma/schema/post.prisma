@@ -6,4 +6,17 @@ model Post {
     imageId     String
     createdAt   DateTime @default(now())
     author      User     @relation(fields: [authorId], references: [id])
+    upvotes     Upvote[]
+}
+
+model Upvote {
+    id        Int      @id @default(autoincrement())
+    userId    Int
+    postId    Int
+    createdAt DateTime @default(now())
+
+    user User @relation(fields: [userId], references: [id])
+    post Post @relation(fields: [postId], references: [id])
+
+    @@unique([userId, postId])
 }

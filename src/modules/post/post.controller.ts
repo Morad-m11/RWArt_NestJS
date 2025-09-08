@@ -4,8 +4,11 @@ import {
     Controller,
     Delete,
     Get,
+    HttpCode,
+    HttpStatus,
     Param,
     ParseFilePipeBuilder,
+    ParseIntPipe,
     Patch,
     Post,
     Query,
@@ -16,6 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from '@prisma/client';
 import { User } from 'src/common/decorators/user.decorator';
+import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { UserJWT } from 'src/core/auth/jwt/jwt.module';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -56,14 +60,19 @@ export class PostController {
         await this.postService.create({ ...post, authorId: user.id, imageId });
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get('featured')
-    async getFeatured(@Query('count') count?: number): Promise<PostEntity[]> {
-        return await this.postService.getFeatured(count);
+    async getFeatured(
+        @Query('count') count?: number,
+        @User('id') userId?: number
+    ): Promise<PostEntity[]> {
+        return await this.postService.getFeatured(count, userId);
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get()
-    findAll(@Query() query: GetPostsDto) {
-        return this.postService.findAll(query);
+    async findAll(@Query() query: GetPostsDto, @User('id') userId?: number) {
+        return await this.postService.findAll(query, userId);
     }
 
     @Get(':id')
@@ -79,5 +88,15 @@ export class PostController {
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.postService.remove(+id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    @Post(':id/upvote')
+    async vote(
+        @Param('id', new ParseIntPipe()) postId: number,
+        @User('id') userId: number
+    ) {
+        return await this.postService.toggleVote(postId, userId);
     }
 }

@@ -17,6 +17,12 @@ async function main() {
                 username: 'Maria',
                 passwordHash: await bcrypt.hash('guess', 10),
                 email_verified: true
+            },
+            {
+                email: 'fakemail',
+                username: 'Angie',
+                passwordHash: await bcrypt.hash('guess', 10),
+                email_verified: true
             }
         ]
     });
@@ -50,6 +56,13 @@ async function main() {
                 description: 'Post Description 4',
                 imageId: 'cld-sample',
                 createdAt: new Date(Date.UTC(2025, 0, 4))
+            },
+            {
+                authorId: 3,
+                title: 'Slugcat in a box',
+                description: 'Do slugcats love boxes as much as regular cats do?',
+                imageId: 'slugcat_box_ppgtse',
+                createdAt: new Date(Date.UTC(2025, 0, 5))
             }
         ]
     });

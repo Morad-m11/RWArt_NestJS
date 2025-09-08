@@ -19,7 +19,7 @@ export type RequestWithThirdPartyJwt = Request & {
 };
 
 @Injectable()
-export class GoogleCustomStrategy extends PassportStrategy(Strategy, 'google') {
+export class CustomGoogleStrategy extends PassportStrategy(Strategy, 'google') {
     client = new OAuth2Client();
 
     constructor() {
