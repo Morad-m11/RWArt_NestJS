@@ -58,19 +58,38 @@ export class LoggingInterceptor implements NestInterceptor {
         });
     }
 
-    private logHttpException(request: Request, err: HttpException) {
-        const statusCode = err.getStatus();
+    private logHttpException(request: Request, error: HttpException) {
+        const statusCode = error.getStatus();
         const errorObject = {
             method: request.method,
             url: request.url,
             status: statusCode,
-            error: err.getResponse()
+            error: this.serializeError(error)
         };
 
         if (statusCode >= 500) {
-            this.logger.error(errorObject, err.stack);
+            this.logger.error(errorObject, error.stack);
         } else {
             this.logger.warn(errorObject);
         }
+    }
+
+    private serializeError(error: unknown): unknown {
+        if (!(error instanceof Error)) {
+            return error;
+        }
+
+        // Copy all own props, including non-enumerables
+        const base: Record<string, unknown> = {};
+
+        for (const key of Object.getOwnPropertyNames(error)) {
+            if (key !== 'stack') {
+                base[key] = error[key as keyof typeof error];
+            }
+        }
+
+        base['cause'] = this.serializeError(error.cause);
+
+        return base;
     }
 }

@@ -8,11 +8,13 @@ export class CloudinaryService {
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream((error, result) => {
                 if (error) {
-                    return reject(new Error('Upload failed', { cause: error }));
+                    return reject(
+                        new Error('Cloudinary upload failed', { cause: error })
+                    );
                 }
 
                 if (!result) {
-                    return reject(new Error('No upload result'));
+                    return reject(new Error('Cloudinary upload returned no result'));
                 }
 
                 resolve(result);
