@@ -24,6 +24,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { ImageService } from './image-upload/image.service';
 import { PostService } from './post.service';
 
+const MAX_FILE_SIZE_BYTES = 10 * 1e6;
+
 @Controller('post')
 export class PostController {
     constructor(
@@ -33,7 +35,7 @@ export class PostController {
 
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(
-        FileInterceptor('image', { limits: { files: 1, fileSize: 20 * 1e6 } })
+        FileInterceptor('image', { limits: { files: 1, fileSize: MAX_FILE_SIZE_BYTES } })
     )
     @Post()
     async create(
@@ -41,7 +43,7 @@ export class PostController {
         @UploadedFile(
             new ParseFilePipeBuilder()
                 .addFileTypeValidator({ fileType: /jpeg|png|webp|gif/ })
-                .addMaxSizeValidator({ maxSize: 20 * 1e6 })
+                .addMaxSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES })
                 .build()
         )
         image: Express.Multer.File,
@@ -61,7 +63,7 @@ export class PostController {
 
     @Get()
     findAll(@Query() query: GetPostsDto) {
-        return this.postService.findAll({ count: query.count, sort: query.sort });
+        return this.postService.findAll(query);
     }
 
     @Get(':id')

@@ -21,7 +21,7 @@ async function bootstrap(): Promise<void> {
     app.use(cookieParser());
     app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
     app.useGlobalInterceptors(new LoggingInterceptor());
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.useGlobalFilters(new PrismaClientExceptionFilter());
 
     const configService = app.get(ConfigService);

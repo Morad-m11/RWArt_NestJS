@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Post as PostEntity } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageId'>;
@@ -39,10 +40,10 @@ export class PostService {
         return [...lastWeekPosts, ...additionalPosts];
     }
 
-    async findAll(options: { count: number; sort: 'asc' | 'desc' }): Promise<Post[]> {
+    async findAll({ limit, sort }: GetPostsDto): Promise<Post[]> {
         return await this.prisma.post.findMany({
-            take: options.count,
-            orderBy: { createdAt: options.sort },
+            take: limit,
+            orderBy: { createdAt: sort },
             include: { author: { select: { username: true } } }
         });
     }
