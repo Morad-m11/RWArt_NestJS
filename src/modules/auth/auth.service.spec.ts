@@ -73,7 +73,7 @@ describe('AuthService', () => {
 
         it('should return the found user on success', async () => {
             const user = await service.validateLocalUser('name', 'password');
-            expect(user).toEqual(USER);
+            expect(user).toEqual({ id: USER.id, username: USER.username });
         });
 
         it('should throw 403 if the email is not verified', async () => {

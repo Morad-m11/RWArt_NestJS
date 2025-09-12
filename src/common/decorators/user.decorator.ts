@@ -1,11 +1,15 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
-import { UserJWT } from 'src/core/auth/jwt/jwt.module';
+
+export type JwtUserClaims = {
+    id: number;
+    username: string;
+};
 
 export const User = createParamDecorator(
-    (property: keyof UserJWT, ctx: ExecutionContext) => {
+    (property: keyof JwtUserClaims, ctx: ExecutionContext) => {
         const request = ctx.switchToHttp().getRequest<Request>();
-        const user = request.user as UserJWT | undefined;
+        const user = request.user as JwtUserClaims | undefined;
 
         if (!user) {
             return;

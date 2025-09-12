@@ -18,10 +18,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Post as PostEntity } from '@prisma/client';
-import { User } from 'src/common/decorators/user.decorator';
+import { JwtUserClaims, User } from 'src/common/decorators/user.decorator';
 import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
-import { UserJWT } from 'src/core/auth/jwt/jwt.module';
 import { CreatePostDto } from './dto/create-post.dto';
 import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -43,7 +42,7 @@ export class PostController {
     )
     @Post()
     async create(
-        @User() user: UserJWT,
+        @User() user: JwtUserClaims,
         @UploadedFile(
             new ParseFilePipeBuilder()
                 .addFileTypeValidator({ fileType: /jpeg|png|webp|gif/ })

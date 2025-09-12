@@ -3,8 +3,10 @@ import {
     Body,
     Controller,
     ForbiddenException,
+    Get,
     HttpCode,
     HttpStatus,
+    Ip,
     Param,
     Post,
     Req,
@@ -13,49 +15,39 @@ import {
     UseGuards
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { minutes, Throttle, ThrottlerGetTrackerFunction } from '@nestjs/throttler';
-import { CookieOptions, Request, Response } from 'express';
+import { minutes, SkipThrottle, Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 import { Cookies } from 'src/common/decorators/cookie.decorator';
+import { JwtUserClaims, User } from 'src/common/decorators/user.decorator';
 import { GoogleAuthGuard } from 'src/core/auth/google/google.guard';
 import { RequestWithThirdPartyJwt } from 'src/core/auth/google/google.strategy';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
-import { RequestWithUser } from 'src/core/auth/local/local.strategy';
 import { Config } from 'src/core/config/env-validation';
+import { throttlerEmailTracker } from 'src/core/throttler.module';
 import { AuthService } from './auth.service';
-
-export interface SignupRequest {
-    email: string;
-    username: string;
-    password: string;
-}
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SignupDto } from './dto/signup.dto';
 
 const REFRESH_TOKEN_KEY = 'refresh_token';
-
-const trackByEmail: ThrottlerGetTrackerFunction = (req) => {
-    const request = req as Request;
-    const body = request.body as Record<string, string | undefined>;
-    return body['email'] || request.ip || request.url;
-};
 
 @Throttle({ long: { ttl: minutes(1), limit: 3 } })
 @Controller('auth')
 export class AuthController {
-    private readonly _refreshCookieOptions: CookieOptions;
+    private _authCookieExpiry: number;
 
     constructor(
         config: ConfigService,
         private authService: AuthService
     ) {
-        const refreshExpiry = config.getOrThrow<number>(Config.REFRESH_TOKEN_EXP);
+        this._authCookieExpiry = config.getOrThrow<number>(Config.REFRESH_TOKEN_EXP);
+    }
 
-        this._refreshCookieOptions = {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-            path: '/auth',
-            maxAge: refreshExpiry
-        };
+    @SkipThrottle({ long: true })
+    @UseGuards(JwtAuthGuard)
+    @Get('me')
+    async getAuthUser(@User('id') userId: number): Promise<JwtUserClaims> {
+        return await this.authService.getAuthUser(userId);
     }
 
     @Throttle({ long: { ttl: minutes(1), limit: 5 } })
@@ -63,18 +55,19 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('login')
     async signIn(
-        @Req() req: RequestWithUser,
+        @Ip() ip: string = '[unknown IP]',
+        @User() user: JwtUserClaims,
         @Res({ passthrough: true }) res: Response
     ): Promise<{ accessToken: string }> {
         const { accessToken, refreshToken } = await this.authService
-            .signIn(req.user.id, req.user.username, req.ip ?? '[unknown IP]')
+            .signIn(user.id, user.username, ip)
             .catch((error: Error) => {
                 throw new BadRequestException('User creation failed', {
                     description: error.message
                 });
             });
 
-        res.cookie(REFRESH_TOKEN_KEY, refreshToken, this._refreshCookieOptions);
+        this.setAuthCookie(res, refreshToken);
 
         return { accessToken };
     }
@@ -91,14 +84,14 @@ export class AuthController {
             req.ip ?? '[unknown IP]'
         );
 
-        res.cookie(REFRESH_TOKEN_KEY, refreshToken, this._refreshCookieOptions);
+        this.setAuthCookie(res, refreshToken);
 
         return { accessToken };
     }
 
     @HttpCode(HttpStatus.OK)
     @Post('signup')
-    async signUp(@Body() body: SignupRequest): Promise<void> {
+    async signUp(@Body() body: SignupDto): Promise<void> {
         await this.authService.signUp(body);
     }
 
@@ -117,7 +110,7 @@ export class AuthController {
             throw new ForbiddenException('Invalid or expired refresh token');
         });
 
-        res.clearCookie(REFRESH_TOKEN_KEY, this._refreshCookieOptions);
+        this.clearAuthCookie(res);
 
         return { message: 'Logged out successfully' };
     }
@@ -138,7 +131,7 @@ export class AuthController {
 
     @Throttle({
         medium: { ttl: minutes(10), limit: 3 },
-        long: { ttl: minutes(10), limit: 1, getTracker: trackByEmail }
+        long: { ttl: minutes(10), limit: 1, getTracker: throttlerEmailTracker }
     })
     @HttpCode(HttpStatus.OK)
     @Post('forgot-password')
@@ -148,7 +141,7 @@ export class AuthController {
 
     @HttpCode(HttpStatus.OK)
     @Post('reset-password')
-    async resetPassword(@Body() body: { password: string; token: string }) {
+    async resetPassword(@Body() body: ResetPasswordDto) {
         await this.authService.resetPassword(body.token, body.password);
     }
 
@@ -166,7 +159,7 @@ export class AuthController {
         const { accessToken, refreshToken: newRefreshToken } = await this.authService
             .refreshAccessToken(refreshToken, req.ip ?? '[unknown IP]')
             .catch((error: Error) => {
-                res.clearCookie(REFRESH_TOKEN_KEY, this._refreshCookieOptions);
+                this.clearAuthCookie(res);
 
                 throw new UnauthorizedException(
                     'Could not refresh access token',
@@ -174,8 +167,28 @@ export class AuthController {
                 );
             });
 
-        res.cookie(REFRESH_TOKEN_KEY, newRefreshToken, this._refreshCookieOptions);
+        this.setAuthCookie(res, newRefreshToken);
 
         return { accessToken };
+    }
+
+    setAuthCookie(res: Response, refreshToken: string) {
+        res.cookie(REFRESH_TOKEN_KEY, refreshToken, {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+            path: '/auth',
+            maxAge: this._authCookieExpiry
+        });
+    }
+
+    clearAuthCookie(res: Response<any, Record<string, any>>) {
+        res.clearCookie(REFRESH_TOKEN_KEY, {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+            path: '/auth',
+            maxAge: this._authCookieExpiry
+        });
     }
 }

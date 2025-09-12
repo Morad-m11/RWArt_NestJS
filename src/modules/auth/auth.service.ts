@@ -3,18 +3,28 @@ import {
     ConflictException,
     ForbiddenException,
     Injectable,
+    NotFoundException,
     UnauthorizedException
 } from '@nestjs/common';
 import { User } from '@prisma/client';
+import { JwtUserClaims } from 'src/common/decorators/user.decorator';
 import { MailService } from 'src/common/mail/mail.service';
 import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
 import { UserService } from '../user/user.service';
-import { SignupRequest } from './auth.controller';
+import { SignupDto } from './dto/signup.dto';
 import { TokenService } from './token/token.service';
 
 interface JWTTokens {
     accessToken: string;
     refreshToken: string;
+}
+
+export interface AuthUser {
+    id: number;
+    email: string;
+    username: string;
+    picture: string | null;
+    createdAt: Date;
 }
 
 @Injectable()
@@ -25,7 +35,17 @@ export class AuthService {
         private tokenService: TokenService
     ) {}
 
-    async validateLocalUser(username: string, password: string): Promise<User> {
+    async getAuthUser(userId: number): Promise<AuthUser> {
+        const user = await this.userService.findOne({ id: userId });
+
+        if (!user) {
+            throw new NotFoundException(`User with ID ${userId} not found`);
+        }
+
+        return user;
+    }
+
+    async validateLocalUser(username: string, password: string): Promise<JwtUserClaims> {
         const user = await this.userService.findOneLocal({ username });
 
         if (!user || !user.passwordHash) {
@@ -40,7 +60,7 @@ export class AuthService {
             throw new ForbiddenException('Email not verified');
         }
 
-        return user;
+        return { id: user.id, username: user.username };
     }
 
     async signIn(userId: number, username: string, userIP: string): Promise<JWTTokens> {
@@ -55,7 +75,7 @@ export class AuthService {
         return await this.issueAuthTokens(dbUser.id, dbUser.username, userIP);
     }
 
-    async signUp(user: SignupRequest): Promise<void> {
+    async signUp(user: SignupDto): Promise<void> {
         const dbUser = await this.userService.create(user);
         const token = await this.tokenService.createVerificationToken(dbUser.id);
         await this.mailService.sendVerificationPrompt(dbUser.email, token);

@@ -3,21 +3,9 @@ import {
     ConflictException,
     Controller,
     Get,
-    NotFoundException,
-    Query,
-    UseGuards
+    Query
 } from '@nestjs/common';
-import { User } from 'src/common/decorators/user.decorator';
-import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
-import { UserJWT } from 'src/core/auth/jwt/jwt.module';
 import { UserService } from './user.service';
-
-interface UserResponse {
-    id: number;
-    email: string;
-    username: string;
-    pictureUrl?: string | null;
-}
 
 @Controller('user')
 export class UserController {
@@ -36,22 +24,5 @@ export class UserController {
         }
 
         return { unique: true };
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Get('profile')
-    async getProfile(@User() user: UserJWT): Promise<UserResponse> {
-        const matchingUser = await this.userService.findOne({ id: user.id });
-
-        if (!matchingUser) {
-            throw new NotFoundException(`User with ID ${user.id} not found`);
-        }
-
-        return {
-            id: matchingUser.id,
-            email: matchingUser.email,
-            username: matchingUser.username,
-            pictureUrl: matchingUser.picture
-        };
     }
 }

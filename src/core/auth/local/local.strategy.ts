@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { User } from '@prisma/client';
-import { Request } from 'express';
 import { Strategy } from 'passport-local';
+import { JwtUserClaims } from 'src/common/decorators/user.decorator';
 import { AuthService } from 'src/modules/auth/auth.service';
-
-export type RequestWithUser = Request & { user: User };
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -13,7 +10,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         super();
     }
 
-    async validate(username: string, password: string): Promise<User> {
+    async validate(username: string, password: string): Promise<JwtUserClaims> {
         return await this.authService.validateLocalUser(username, password);
     }
 }
