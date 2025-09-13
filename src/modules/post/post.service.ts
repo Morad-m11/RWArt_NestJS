@@ -4,7 +4,11 @@ import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageId'>;
-type Post = PostEntity & { author: { username: string } } & { upvoted: boolean };
+type Post = PostEntity & {
+    author: { username: string };
+    upvoteCount: number;
+    upvoted: boolean;
+};
 
 interface FindPostsArgs {
     limit?: number;
@@ -57,13 +61,15 @@ export class PostService {
             },
             include: {
                 author: { select: { username: true } },
-                ...(userId ? { upvotes: { where: { userId } } } : {})
+                ...(userId ? { upvotes: { where: { userId } } } : {}),
+                _count: { select: { upvotes: true } }
             }
         });
 
-        return posts.map(({ upvotes, ...post }) => ({
+        return posts.map(({ _count, upvotes, ...post }) => ({
             ...post,
-            upvoted: upvotes?.length > 0
+            upvoted: upvotes?.length > 0,
+            upvoteCount: _count.upvotes
         }));
     }
 
