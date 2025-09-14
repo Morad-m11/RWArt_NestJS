@@ -7,7 +7,7 @@
         "declaration": true,
         "emitDecoratorMetadata": true,
         "esModuleInterop": true,
-        "exactOptionalPropertyTypes": true,
+        "exactOptionalPropertyTypes": false,
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
         "incremental": true,

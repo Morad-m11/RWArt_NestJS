@@ -6,9 +6,10 @@ import {
     NotFoundException,
     UnauthorizedException
 } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User as UserEntity } from '@prisma/client';
 import { JwtUserClaims } from 'src/common/decorators/user.decorator';
 import { MailService } from 'src/common/mail/mail.service';
+import { extract } from 'src/common/omit';
 import { JWTDecodedThirdParty } from 'src/core/auth/google/google.strategy';
 import { UserService } from '../user/user.service';
 import { SignupDto } from './dto/signup.dto';
@@ -19,13 +20,12 @@ interface JWTTokens {
     refreshToken: string;
 }
 
-export interface AuthUser {
+type AuthUser = {
     id: number;
     email: string;
     username: string;
     picture: string | null;
-    createdAt: Date;
-}
+};
 
 @Injectable()
 export class AuthService {
@@ -42,7 +42,7 @@ export class AuthService {
             throw new NotFoundException(`User with ID ${userId} not found`);
         }
 
-        return user;
+        return extract(user, 'id', 'email', 'username', 'picture');
     }
 
     async validateLocalUser(username: string, password: string): Promise<JwtUserClaims> {
@@ -133,7 +133,9 @@ export class AuthService {
         return await this.tokenService.refreshAccessToken(refreshToken, userIP);
     }
 
-    private async findOrCreateThirdPartyUser(user: JWTDecodedThirdParty): Promise<User> {
+    private async findOrCreateThirdPartyUser(
+        user: JWTDecodedThirdParty
+    ): Promise<UserEntity> {
         const dbUser = await this.userService.findOne({ email: user.email });
 
         if (dbUser) {

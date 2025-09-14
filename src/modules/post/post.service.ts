@@ -10,7 +10,8 @@ type Post = PostEntity & {
     upvoted: boolean;
 };
 
-interface FindPostsArgs {
+export interface PostFilters {
+    author?: string;
     limit?: number;
     sort?: 'asc' | 'desc';
     from?: Date;
@@ -26,18 +27,18 @@ export class PostService {
     }
 
     /** Returns a random selection of posts */
-    async getFeatured(count = 2, userId?: number): Promise<Post[]> {
+    async getFeatured(limit = 2, userId?: number): Promise<Post[]> {
         const now = new Date();
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         const lastWeek = new Date(now.getTime() - sevenDays);
 
         const lastWeekPosts = await this.findAll({ from: lastWeek }, userId);
 
-        if (lastWeekPosts.length < count) {
+        if (lastWeekPosts.length < limit) {
             const additionalPosts = await this.findAll(
                 {
                     exclude: lastWeekPosts.map((x) => x.id),
-                    limit: count - lastWeekPosts.length
+                    limit: limit - lastWeekPosts.length
                 },
                 userId
             );
@@ -45,24 +46,25 @@ export class PostService {
             return [...lastWeekPosts, ...additionalPosts];
         }
 
-        return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, count);
+        return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, limit);
     }
 
     async findAll(
-        { limit, sort, from, exclude }: FindPostsArgs,
+        { author, limit, sort, from, exclude }: PostFilters,
         userId?: number
     ): Promise<Post[]> {
         const posts = await this.prisma.post.findMany({
             take: limit ?? 10,
             orderBy: { createdAt: sort ?? 'desc' },
             where: {
+                ...(author ? { author: { username: author } } : {}),
                 ...(exclude ? { id: { notIn: exclude } } : {}),
                 ...(from ? { createdAt: { gt: from } } : {})
             },
             include: {
                 author: { select: { username: true } },
-                ...(userId ? { upvotes: { where: { userId } } } : {}),
-                _count: { select: { upvotes: true } }
+                _count: { select: { upvotes: true } },
+                ...(userId ? { upvotes: { where: { userId } } } : {})
             }
         });
 

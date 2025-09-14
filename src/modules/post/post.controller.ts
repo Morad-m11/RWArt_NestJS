@@ -62,16 +62,16 @@ export class PostController {
     @UseGuards(OptionalJwtAuthGuard)
     @Get('featured')
     async getFeatured(
-        @Query('count') count?: number,
+        @Query('limit') limit?: number,
         @User('id') userId?: number
     ): Promise<PostEntity[]> {
-        return await this.postService.getFeatured(count, userId);
+        return await this.postService.getFeatured(limit, userId);
     }
 
     @UseGuards(OptionalJwtAuthGuard)
     @Get()
-    async findAll(@Query() query: GetPostsDto, @User('id') userId?: number) {
-        return await this.postService.findAll(query, userId);
+    async findAll(@Query() filters: GetPostsDto, @User('id') userId?: number) {
+        return await this.postService.findAll(filters, userId);
     }
 
     @Get(':id')

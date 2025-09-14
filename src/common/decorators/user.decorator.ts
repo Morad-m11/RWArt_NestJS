@@ -6,6 +6,9 @@ export type JwtUserClaims = {
     username: string;
 };
 
+/**
+ * Extracts the authenticated user's info from the request
+ */
 export const User = createParamDecorator(
     (property: keyof JwtUserClaims, ctx: ExecutionContext) => {
         const request = ctx.switchToHttp().getRequest<Request>();
