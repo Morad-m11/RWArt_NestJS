@@ -83,8 +83,8 @@ export class PostService {
         return `This action updates a #${id} post`;
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} post`;
+    async remove(id: number) {
+        return await this.prisma.post.delete({ where: { id } });
     }
 
     async toggleVote(postId: number, userId: number) {

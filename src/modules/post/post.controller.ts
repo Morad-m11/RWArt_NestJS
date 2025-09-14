@@ -85,8 +85,8 @@ export class PostController {
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.postService.remove(+id);
+    async remove(@Param('id') id: string) {
+        return await this.postService.remove(+id);
     }
 
     @UseGuards(JwtAuthGuard)
