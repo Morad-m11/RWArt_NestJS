@@ -17,7 +17,6 @@ import {
     UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Post as PostEntity } from '@prisma/client';
 import { JwtUserClaims, User } from 'src/common/decorators/user.decorator';
 import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
@@ -25,10 +24,12 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ImageService } from './image-upload/image.service';
-import { PostService } from './post.service';
+import { Post as PostResponse, PostService } from './post.service';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1e6;
+const SUPPORTED_FILE_TYPES = /jpeg|png|webp|gif/;
 
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('post')
 export class PostController {
     constructor(
@@ -45,7 +46,7 @@ export class PostController {
         @User() user: JwtUserClaims,
         @UploadedFile(
             new ParseFilePipeBuilder()
-                .addFileTypeValidator({ fileType: /jpeg|png|webp|gif/ })
+                .addFileTypeValidator({ fileType: SUPPORTED_FILE_TYPES })
                 .addMaxSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES })
                 .build()
         )
@@ -59,16 +60,14 @@ export class PostController {
         await this.postService.create({ ...post, authorId: user.id, imageId });
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
     @Get('featured')
     async getFeatured(
         @Query('limit') limit?: number,
         @User('id') userId?: number
-    ): Promise<PostEntity[]> {
+    ): Promise<PostResponse[]> {
         return await this.postService.getFeatured(limit, userId);
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
     @Get()
     async findAll(@Query() filters: GetPostsDto, @User('id') userId?: number) {
         return await this.postService.findAll(filters, userId);
@@ -79,14 +78,19 @@ export class PostController {
         return this.postService.findOne(+id);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
         return this.postService.update(+id, updatePostDto);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
-    async remove(@Param('id') id: string) {
-        return await this.postService.remove(+id);
+    async remove(
+        @Param('id', new ParseIntPipe()) id: number,
+        @User('id') userId: number
+    ) {
+        return await this.postService.remove(id, userId);
     }
 
     @UseGuards(JwtAuthGuard)

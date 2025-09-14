@@ -1,13 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Post as PostEntity } from '@prisma/client';
+import { omit } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 
-type CreatePost = Pick<PostEntity, 'authorId' | 'title' | 'description' | 'imageId'>;
-type Post = PostEntity & {
+export type CreatePost = Pick<
+    PostEntity,
+    'authorId' | 'title' | 'description' | 'imageId'
+>;
+
+export type Post = Omit<PostEntity, 'authorId'> & {
     author: { username: string };
     upvoteCount: number;
-    upvoted: boolean;
+    isOwner: boolean;
+    isUpvoted: boolean;
 };
 
 export interface PostFilters {
@@ -69,22 +75,27 @@ export class PostService {
         });
 
         return posts.map(({ _count, upvotes, ...post }) => ({
-            ...post,
-            upvoted: upvotes?.length > 0,
-            upvoteCount: _count.upvotes
+            ...omit(post, 'authorId'),
+            upvoteCount: _count.upvotes,
+            isUpvoted: upvotes?.length > 0,
+            isOwner: userId === post.authorId
         }));
     }
 
     findOne(id: number) {
-        return `This action returns a #${id} post`;
+        return this.prisma.post.findFirst({ where: { id } });
     }
 
     update(id: number, _updatePostDto: UpdatePostDto) {
         return `This action updates a #${id} post`;
     }
 
-    async remove(id: number) {
-        return await this.prisma.post.delete({ where: { id } });
+    async remove(postId: number, userId: number) {
+        if (!(await this.isOwner(postId, userId))) {
+            throw new ForbiddenException('Insufficient permissions to modify post');
+        }
+
+        return await this.prisma.post.delete({ where: { id: postId } });
     }
 
     async toggleVote(postId: number, userId: number) {
@@ -99,6 +110,11 @@ export class PostService {
                 data: { postId, userId }
             });
         }
+    }
+
+    async isOwner(id: number, authorId: number): Promise<boolean> {
+        const count = await this.prisma.post.count({ where: { id, authorId } });
+        return count > 0;
     }
 
     private async isUpvoted(postId: number, userId: number): Promise<boolean> {
