@@ -20,9 +20,14 @@ async function bootstrap(): Promise<void> {
 
     app.use(cookieParser());
     app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-    app.useGlobalInterceptors(new LoggingInterceptor());
-    app.useGlobalPipes(new ValidationPipe());
     app.useGlobalFilters(new PrismaClientExceptionFilter());
+    app.useGlobalInterceptors(new LoggingInterceptor());
+    app.useGlobalPipes(
+        new ValidationPipe({
+            transform: true,
+            transformOptions: { enableImplicitConversion: true }
+        })
+    );
 
     const configService = app.get(ConfigService);
     const port = configService.getOrThrow<number>('PORT');

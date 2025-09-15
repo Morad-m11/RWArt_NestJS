@@ -9,13 +9,17 @@ export class GetPostsDto {
 
     @IsNumber()
     @IsOptional()
-    limit?: number;
+    limit?: number = 10;
 
+    @IsNumber()
     @IsOptional()
+    offset?: number;
+
     @IsIn(['asc', 'desc'])
+    @IsOptional()
     sort?: 'asc' | 'desc';
 
-    @IsOptional()
     @IsDate()
+    @IsOptional()
     from?: Date;
 }

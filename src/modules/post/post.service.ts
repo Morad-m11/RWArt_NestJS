@@ -19,6 +19,7 @@ export type Post = Omit<PostEntity, 'authorId'> & {
 export interface PostFilters {
     author?: string;
     limit?: number;
+    offset?: number;
     sort?: 'asc' | 'desc';
     from?: Date;
     exclude?: number[];
@@ -49,19 +50,20 @@ export class PostService {
                 userId
             );
 
-            return [...lastWeekPosts, ...additionalPosts];
+            return [...lastWeekPosts, ...additionalPosts].sort(() => Math.random() - 0.5);
         }
 
         return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, limit);
     }
 
     async findAll(
-        { author, limit, sort, from, exclude }: PostFilters,
+        { author, limit, offset, sort, from, exclude }: PostFilters,
         userId?: number
     ): Promise<Post[]> {
         const posts = await this.prisma.post.findMany({
-            take: limit ?? 10,
             orderBy: { createdAt: sort ?? 'desc' },
+            take: limit ?? 10,
+            skip: offset,
             where: {
                 ...(author ? { author: { username: author } } : {}),
                 ...(exclude ? { id: { notIn: exclude } } : {}),
