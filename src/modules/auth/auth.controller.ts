@@ -24,7 +24,7 @@ import { RequestWithThirdPartyJwt } from 'src/core/auth/google/google.strategy';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { LocalAuthGuard } from 'src/core/auth/local/local.guard';
 import { Config } from 'src/core/config/env-validation';
-import { throttlerEmailTracker } from 'src/core/throttler.module';
+import { emailTracker } from 'src/core/throttler.module';
 import { AuthService } from './auth.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -131,7 +131,7 @@ export class AuthController {
 
     @Throttle({
         medium: { ttl: minutes(10), limit: 3 },
-        long: { ttl: minutes(10), limit: 1, getTracker: throttlerEmailTracker }
+        long: { ttl: minutes(10), limit: 1, getTracker: emailTracker }
     })
     @HttpCode(HttpStatus.OK)
     @Post('forgot-password')

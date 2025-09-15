@@ -7,6 +7,7 @@ import { ConfiguredConfigModule } from './core/config/config.module';
 import { ConfiguredLoggerModule } from './core/logging/logging.module';
 import { ConfiguredThrottlerModule } from './core/throttler.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 import { PostModule } from './modules/post/post.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -17,7 +18,8 @@ import { UserModule } from './modules/user/user.module';
         ConfiguredThrottlerModule,
         AuthModule,
         UserModule,
-        PostModule
+        PostModule,
+        FeedbackModule
     ],
     controllers: [AppController],
     providers: [

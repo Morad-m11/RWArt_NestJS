@@ -14,6 +14,7 @@ model User {
     thirdPartyAccount        ThirdPartyAccount?
     posts                    Post[]
     upvotes                  Upvote[]
+    feedbacks                Feedback[]
 }
 
 model ThirdPartyAccount {
