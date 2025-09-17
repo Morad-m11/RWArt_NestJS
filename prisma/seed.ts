@@ -29,20 +29,21 @@ async function main() {
 
     await prisma.post.createMany({
         data: [
-            {
-                authorId: 3,
-                title: 'Slugcat in a box',
-                description: 'Do slugcats love boxes as much as regular cats do?',
-                imageId: 'slugcat_box_ppgtse',
-                createdAt: new Date(Date.UTC(2025, 0, 1))
-            },
             ...Array.from({ length: 20 }, (_, i) => ({
                 authorId: (i % 3) + 1,
                 title: `Post Title ${i}`,
                 description: `Post Description ${i}`,
                 imageId: `cld-sample-${(i % 9) + 1}`,
                 createdAt: new Date(Date.UTC(2025, 0, i))
-            }))
+            })),
+            {
+                authorId: 3,
+                title: 'Slugcat in a box',
+                description: 'Do slugcats love boxes as much as regular cats do?',
+                imageId: 'slugcat_box_ppgtse',
+                createdAt: new Date(Date.UTC(2025, 0, 30)),
+                tags: ['art', 'cats', 'boxes']
+            }
         ]
     });
 }

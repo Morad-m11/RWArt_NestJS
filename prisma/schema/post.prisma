@@ -4,6 +4,7 @@ model Post {
     title       String
     description String
     imageId     String
+    tags        String[] @default([])
     createdAt   DateTime @default(now())
     author      User     @relation(fields: [authorId], references: [id])
     upvotes     Upvote[]
