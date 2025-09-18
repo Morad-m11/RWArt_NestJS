@@ -76,6 +76,10 @@ export class AuthService {
     }
 
     async signUp(user: SignupDto): Promise<void> {
+        if (await this.userService.exists({ email: user.email })) {
+            return;
+        }
+
         const dbUser = await this.userService.create(user);
         const token = await this.tokenService.createVerificationToken(dbUser.id);
         await this.mailService.sendVerificationPrompt(dbUser.email, token);

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 import { Config } from 'src/core/config/env-validation';
 
-export const CloudinaryProvider: Provider = {
+export const CloudinaryConfigProvider: Provider = {
     provide: 'CLOUDINARY',
     inject: [ConfigService],
     useFactory: (config: ConfigService) => {

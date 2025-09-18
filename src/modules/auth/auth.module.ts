@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { MailService } from 'src/common/mail/mail.service';
+import { MailModule } from 'src/common/mail/mail.module';
 import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { CustomGoogleStrategy } from 'src/core/auth/google/google.strategy';
 import { ConfiguredJwtModule } from 'src/core/auth/jwt/jwt.module';
@@ -11,12 +11,11 @@ import { AuthService } from './auth.service';
 import { TokenService } from './token/token.service';
 
 @Module({
-    imports: [ConfiguredJwtModule, PrismaModule],
+    imports: [ConfiguredJwtModule, PrismaModule, MailModule],
     controllers: [AuthController],
     providers: [
         AuthService,
         UserService,
-        MailService,
         TokenService,
         JwtStrategy,
         CustomGoogleStrategy,

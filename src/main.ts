@@ -6,16 +6,18 @@ import cookieParser from 'cookie-parser';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { PrismaClientExceptionFilter } from './common/prisma/filter/prisma.filter';
+import { SITE_ORIGIN } from './core/config/site-origin';
 import { LoggingInterceptor } from './core/logging/interceptor/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-        cors: {
-            credentials: true,
-            origin: 'http://localhost:4200',
-            exposedHeaders: ['Retry-After-Long', 'Retry-After-Medium']
-        },
         abortOnError: false
+    });
+
+    app.enableCors({
+        credentials: true,
+        origin: app.get(SITE_ORIGIN),
+        exposedHeaders: ['Retry-After-Long', 'Retry-After-Medium']
     });
 
     app.use(cookieParser());

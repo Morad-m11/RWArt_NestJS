@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CloudinaryServiceMock } from 'src/mocks/cloudinary/cloudinary.service.mock';
-import { CloudinaryProvider } from './cloudinary.provider';
+import { CloudinaryConfigProvider } from './cloudinary.provider';
 import { CloudinaryService } from './cloudinary.service';
 
 const CloudinaryServiceOrMock = {
@@ -15,7 +15,7 @@ const CloudinaryServiceOrMock = {
 };
 
 @Module({
-    exports: [CloudinaryProvider, CloudinaryServiceOrMock],
-    providers: [CloudinaryProvider, CloudinaryServiceOrMock]
+    providers: [CloudinaryConfigProvider, CloudinaryServiceOrMock],
+    exports: [CloudinaryConfigProvider, CloudinaryServiceOrMock]
 })
 export class CloudinaryModule {}

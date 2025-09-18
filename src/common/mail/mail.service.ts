@@ -1,46 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import mailer from 'nodemailer';
-import {
-    createAccountRecoveryHTML,
-    createTokenReusedHTML,
-    createVerificationHTML
-} from './message-template';
+import { Inject, Injectable } from '@nestjs/common';
+import { SITE_ORIGIN } from 'src/core/config/site-origin';
+import { accountRecoveryHTML, tokenReusedHTML, verificationHTML } from './mail-templates';
 
 @Injectable()
 export class MailService {
+    constructor(@Inject(SITE_ORIGIN) private siteOrigin: string) {}
+
     async sendVerificationPrompt(email: string, token: string) {
-        const message = createVerificationHTML(token);
-        await this.send(email, message);
+        await this.send(
+            email,
+            verificationHTML(`${this.siteOrigin}/auth/verify-account/${token}`)
+        );
     }
 
     async sendAccountRecoveryPrompt(email: string, name: string, token: string) {
-        const message = createAccountRecoveryHTML(name, token);
-        await this.send(email, message);
+        await this.send(
+            email,
+            accountRecoveryHTML(name, `${this.siteOrigin}/auth/reset-password/${token}`)
+        );
     }
 
     async sendTokenReusedMail(email: string, name: string) {
-        const message = createTokenReusedHTML(name);
-        await this.send(email, message);
+        await this.send(email, tokenReusedHTML(name));
     }
 
-    private async send(email: string, messageHTML: string) {
-        const account = await mailer.createTestAccount();
-
-        const transporter = mailer.createTransport({
-            host: 'smtp.ethereal.email',
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: account
-        });
-
-        const info = await transporter.sendMail({
-            from: '"Maddison Foo Koch" <maddison53@ethereal.email>',
-            to: email,
-            subject: 'Hello ✔',
-            html: messageHTML
-        });
-
-        console.log('Message sent:', info.messageId);
-        console.log('Preview URL: ', mailer.getTestMessageUrl(info));
+    async send(_email: string, _content: { subject: string; html: string }) {
+        await Promise.reject(new Error('Method not implemented'));
     }
 }

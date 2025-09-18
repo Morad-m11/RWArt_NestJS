@@ -1,4 +1,11 @@
-import { seconds, ThrottlerGetTrackerFunction, ThrottlerModule } from '@nestjs/throttler';
+import { Provider } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import {
+    seconds,
+    ThrottlerGetTrackerFunction,
+    ThrottlerGuard,
+    ThrottlerModule
+} from '@nestjs/throttler';
 import { Request } from 'express';
 
 export const emailTracker: ThrottlerGetTrackerFunction = (req) => {
@@ -12,3 +19,10 @@ export const ConfiguredThrottlerModule = ThrottlerModule.forRoot([
     { name: 'medium', ttl: seconds(10), limit: 20 },
     { name: 'long', ttl: seconds(60), limit: 100 }
 ]);
+
+export const provideThrottlerGuard = (): Provider => {
+    return {
+        provide: APP_GUARD,
+        useClass: ThrottlerGuard
+    };
+};
