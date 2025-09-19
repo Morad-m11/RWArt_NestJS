@@ -89,7 +89,7 @@ export class PostService {
         return `This action updates a #${id} post`;
     }
 
-    async remove(postId: number, userId: number) {
+    async remove(postId: number, userId: number): Promise<PostEntity> {
         if (!(await this.isOwner(postId, userId))) {
             throw new ForbiddenException('Insufficient permissions to modify post');
         }

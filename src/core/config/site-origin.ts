@@ -9,12 +9,7 @@ export const provideSiteOrigin = (): Provider => {
         inject: [ConfigService],
         useFactory: (config: ConfigService) => {
             const isDevMode = config.getOrThrow('NODE_ENV') === 'development';
-
-            if (!isDevMode) {
-                throw new Error('Missing Origin URL for production mode');
-            }
-
-            return isDevMode ? 'http://localhost:4200' : '';
+            return isDevMode ? 'http://localhost:4200' : 'http://localhost:4200';
         }
     };
 };

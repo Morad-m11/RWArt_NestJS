@@ -23,4 +23,10 @@ export class CloudinaryService {
             streamifier.createReadStream(file.buffer).pipe(uploadStream);
         });
     }
+
+    async deleteFile(public_id: string): Promise<{ result?: string }> {
+        return cloudinary.uploader.destroy(public_id, { invalidate: true }) as Promise<{
+            result?: string;
+        }>;
+    }
 }

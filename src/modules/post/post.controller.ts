@@ -90,7 +90,8 @@ export class PostController {
         @Param('id', new ParseIntPipe()) id: number,
         @User('id') userId: number
     ) {
-        return await this.postService.remove(id, userId);
+        const post = await this.postService.remove(id, userId);
+        await this.imageService.delete(post.imageId).catch(() => {});
     }
 
     @UseGuards(JwtAuthGuard)
