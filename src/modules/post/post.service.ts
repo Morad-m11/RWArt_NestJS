@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Post as PostEntity } from '@prisma/client';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Post as PostEntity, Prisma, Upvote, User } from '@prisma/client';
 import { omit } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -17,6 +17,7 @@ export type Post = Omit<PostEntity, 'authorId'> & {
 };
 
 export interface PostFilters {
+    id?: number;
     author?: string;
     limit?: number;
     offset?: number;
@@ -64,28 +65,24 @@ export class PostService {
             orderBy: { createdAt: sort ?? 'desc' },
             take: limit ?? 10,
             skip: offset,
-            where: {
-                ...(author ? { author: { username: author } } : {}),
-                ...(exclude ? { id: { notIn: exclude } } : {}),
-                ...(from ? { createdAt: { gt: from } } : {})
-            },
-            include: {
-                author: { select: { username: true } },
-                _count: { select: { upvotes: true } },
-                ...(userId ? { upvotes: { where: { userId } } } : {})
-            }
+            where: this.buildPostWhere({ author, exclude, from }),
+            include: this.includePostWithUserUpvotes(userId)
         });
 
-        return posts.map(({ _count, upvotes, ...post }) => ({
-            ...omit(post, 'authorId'),
-            upvoteCount: _count.upvotes,
-            isUpvoted: upvotes?.length > 0,
-            isOwner: userId === post.authorId
-        }));
+        return posts.map((post) => this.transformPost(post, userId));
     }
 
-    findOne(id: number) {
-        return this.prisma.post.findFirst({ where: { id } });
+    async findOne(postId: number, userId?: number): Promise<Post> {
+        const post = await this.prisma.post.findFirst({
+            where: this.buildPostWhere({ id: postId }),
+            include: this.includePostWithUserUpvotes(userId)
+        });
+
+        if (!post) {
+            throw new NotFoundException(`Post with id ${postId} not found`);
+        }
+
+        return this.transformPost(post);
     }
 
     update(id: number, _updatePostDto: UpdatePostDto) {
@@ -100,7 +97,7 @@ export class PostService {
         return await this.prisma.post.delete({ where: { id: postId } });
     }
 
-    async toggleVote(postId: number, userId: number) {
+    async toggleUpvote(postId: number, userId: number) {
         const isUpvoted = await this.isUpvoted(postId, userId);
 
         if (isUpvoted) {
@@ -125,5 +122,41 @@ export class PostService {
         });
 
         return count > 0;
+    }
+
+    private buildPostWhere({
+        author,
+        from,
+        exclude
+    }: PostFilters): Prisma.PostWhereInput {
+        return {
+            ...(author ? { author: { username: author } } : {}),
+            ...(exclude ? { id: { notIn: exclude } } : {}),
+            ...(from ? { createdAt: { gt: from } } : {})
+        };
+    }
+
+    private includePostWithUserUpvotes(userId?: number) {
+        return {
+            author: { select: { username: true } },
+            _count: { select: { upvotes: true } },
+            ...(userId ? { upvotes: { where: { userId } } } : {})
+        };
+    }
+
+    private transformPost(
+        post: PostEntity & {
+            author: Pick<User, 'username'>;
+            upvotes?: Upvote[];
+            _count: Prisma.PostCountOutputType;
+        },
+        userId?: number
+    ): Post {
+        return {
+            ...omit(post, 'authorId', '_count', 'upvotes'),
+            upvoteCount: post._count.upvotes,
+            isUpvoted: !!post.upvotes?.length,
+            isOwner: post.authorId === userId
+        };
     }
 }

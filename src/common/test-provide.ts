@@ -5,7 +5,7 @@ export function provideEmpty(...tokens: Type<unknown>[]): Provider<unknown>[] {
 }
 
 export function provideValue<T>(
-    token: InjectionToken | Type<T>,
+    token: InjectionToken<T>,
     implementation: Partial<T> = {}
 ): Provider<Partial<T>> {
     return { provide: token, useValue: implementation };

@@ -74,8 +74,8 @@ export class PostController {
     }
 
     @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.postService.findOne(+id);
+    findOne(@Param('id') id: string, @User('id') userId: number) {
+        return this.postService.findOne(+id, userId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -100,6 +100,6 @@ export class PostController {
         @Param('id', new ParseIntPipe()) postId: number,
         @User('id') userId: number
     ) {
-        return await this.postService.toggleVote(postId, userId);
+        return await this.postService.toggleUpvote(postId, userId);
     }
 }
