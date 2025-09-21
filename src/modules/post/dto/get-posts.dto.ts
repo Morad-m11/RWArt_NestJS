@@ -7,9 +7,13 @@ export class GetPostsDto {
     @IsOptional()
     author?: string;
 
+    @IsString()
+    @IsOptional()
+    search?: string;
+
     @IsNumber()
     @IsOptional()
-    limit?: number = 10;
+    limit?: number;
 
     @IsNumber()
     @IsOptional()

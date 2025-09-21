@@ -17,7 +17,7 @@ async function bootstrap(): Promise<void> {
     app.enableCors({
         credentials: true,
         origin: app.get(SITE_ORIGIN),
-        exposedHeaders: ['Retry-After-Long', 'Retry-After-Medium']
+        exposedHeaders: ['Retry-After-Long', 'Retry-After-Medium', 'X-Total-Count']
     });
 
     app.use(cookieParser());

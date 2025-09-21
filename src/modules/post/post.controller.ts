@@ -12,11 +12,13 @@ import {
     Patch,
     Post,
     Query,
+    Res,
     UploadedFile,
     UseGuards,
     UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { User } from 'src/common/decorators/user.decorator';
 import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
@@ -24,7 +26,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { ImageService } from './image-upload/image.service';
-import { Post as PostResponse, PostService } from './post.service';
+import { Post as dbPost, PostService } from './post.service';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1e6;
 const SUPPORTED_FILE_TYPES = /jpeg|png|webp|gif/;
@@ -64,13 +66,19 @@ export class PostController {
     async getFeatured(
         @Query('limit') limit?: number,
         @User('id') userId?: number
-    ): Promise<PostResponse[]> {
+    ): Promise<dbPost[]> {
         return await this.postService.getFeatured(limit, userId);
     }
 
     @Get()
-    async findAll(@Query() filters: GetPostsDto, @User('id') userId?: number) {
-        return await this.postService.findAll(filters, userId);
+    async findAll(
+        @Res({ passthrough: true }) res: Response,
+        @Query() filters: GetPostsDto,
+        @User('id') userId?: number
+    ): Promise<dbPost[]> {
+        const { posts, totalCount } = await this.postService.findAll(filters, userId);
+        res.setHeader('X-Total-Count', totalCount);
+        return posts;
     }
 
     @Get(':id')

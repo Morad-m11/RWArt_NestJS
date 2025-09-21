@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { omit } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 type PostCreateBody = Prisma.PostGetPayload<{
@@ -27,15 +28,10 @@ export type Post = Omit<PostEntity, 'authorId'> & {
     isUpvoted: boolean;
 };
 
-export interface PostFilters {
+type PostFilters = GetPostsDto & {
     id?: number;
-    author?: string;
-    limit?: number;
-    offset?: number;
-    sort?: 'asc' | 'desc';
-    from?: Date;
     exclude?: number[];
-}
+};
 
 @Injectable()
 export class PostService {
@@ -63,10 +59,10 @@ export class PostService {
         const sevenDays = 7 * 24 * 60 * 60 * 1000;
         const lastWeek = new Date(now.getTime() - sevenDays);
 
-        const lastWeekPosts = await this.findAll({ from: lastWeek }, userId);
+        const { posts: lastWeekPosts } = await this.findAll({ from: lastWeek }, userId);
 
         if (lastWeekPosts.length < limit) {
-            const additionalPosts = await this.findAll(
+            const { posts: additionalPosts } = await this.findAll(
                 {
                     exclude: lastWeekPosts.map((x) => x.id),
                     limit: limit - lastWeekPosts.length
@@ -81,18 +77,26 @@ export class PostService {
     }
 
     async findAll(
-        { author, limit, offset, sort, from, exclude }: PostFilters,
+        filters: PostFilters,
         userId?: number
-    ): Promise<Post[]> {
-        const posts = await this.prisma.post.findMany({
-            orderBy: { createdAt: sort ?? 'desc' },
-            take: limit ?? 10,
-            skip: offset,
-            where: this.buildPostWhere({ author, exclude, from }),
-            include: this.buildPostInclude(userId)
-        });
+    ): Promise<{ posts: Post[]; totalCount: number }> {
+        const { sort, limit, offset } = filters;
 
-        return posts.map((post) => this.transformPost(post, userId));
+        const [posts, totalCount] = await this.prisma.$transaction([
+            this.prisma.post.findMany({
+                orderBy: { createdAt: sort ?? 'desc' },
+                take: limit ?? 10,
+                skip: offset,
+                where: this.buildPostWhere(filters),
+                include: this.buildPostInclude(userId)
+            }),
+            this.prisma.post.count({ where: this.buildPostWhere(filters) })
+        ]);
+
+        return {
+            posts: posts.map((post) => this.transformPost(post, userId)),
+            totalCount
+        };
     }
 
     async findOne(postId: number, userId?: number): Promise<Post> {
@@ -147,19 +151,27 @@ export class PostService {
         return count > 0;
     }
 
-    private buildPostWhere({
-        author,
-        from,
-        exclude
-    }: PostFilters): Prisma.PostWhereInput {
+    private buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
+        const { author, exclude, from, search } = filters;
+
         return {
             ...(author ? { author: { username: author } } : {}),
             ...(exclude ? { id: { notIn: exclude } } : {}),
-            ...(from ? { createdAt: { gt: from } } : {})
+            ...(from ? { createdAt: { gt: from } } : {}),
+            ...(search
+                ? {
+                      OR: [
+                          {
+                              title: { contains: search, mode: 'insensitive' },
+                              description: { contains: search, mode: 'insensitive' }
+                          }
+                      ]
+                  }
+                : {})
         };
     }
 
-    private buildPostInclude(userId?: number) {
+    private buildPostInclude(userId?: number): Prisma.PostInclude {
         return {
             author: { select: { username: true } },
             _count: { select: { upvotes: true } },
