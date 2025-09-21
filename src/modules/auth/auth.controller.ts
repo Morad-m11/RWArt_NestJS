@@ -153,7 +153,7 @@ export class AuthController {
         @Cookies(REFRESH_TOKEN_KEY) refreshToken?: string
     ): Promise<{ accessToken: string }> {
         if (!refreshToken) {
-            throw new BadRequestException('Missing refresh token');
+            throw new UnauthorizedException('Missing refresh token');
         }
 
         const { accessToken, refreshToken: newRefreshToken } = await this.authService

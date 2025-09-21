@@ -17,7 +17,7 @@ import {
     UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtUserClaims, User } from 'src/common/decorators/user.decorator';
+import { User } from 'src/common/decorators/user.decorator';
 import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
 import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -43,7 +43,6 @@ export class PostController {
     )
     @Post()
     async create(
-        @User() user: JwtUserClaims,
         @UploadedFile(
             new ParseFilePipeBuilder()
                 .addFileTypeValidator({ fileType: SUPPORTED_FILE_TYPES })
@@ -51,13 +50,14 @@ export class PostController {
                 .build()
         )
         image: Express.Multer.File,
-        @Body() post: CreatePostDto
+        @Body() post: CreatePostDto,
+        @User('id') authorId: number
     ) {
         const imageId = await this.imageService.upload(image).catch((error) => {
             throw new BadGatewayException('Image upload failed', { cause: error });
         });
 
-        await this.postService.create({ ...post, authorId: user.id, imageId });
+        await this.postService.create({ ...post, authorId, imageId });
     }
 
     @Get('featured')

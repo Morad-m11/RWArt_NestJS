@@ -1,13 +1,24 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Post as PostEntity, Prisma, Upvote, User } from '@prisma/client';
+import {
+    Post as PostEntity,
+    Prisma,
+    Tag as TagEntity,
+    Upvote,
+    User
+} from '@prisma/client';
 import { omit } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 
-export type CreatePost = Pick<
-    PostEntity,
-    'authorId' | 'title' | 'description' | 'imageId'
->;
+type PostCreateBody = Prisma.PostGetPayload<{
+    omit: {
+        id: true;
+        createdAt: true;
+    };
+    include: {
+        tags: { omit: { id: true } };
+    };
+}>;
 
 export type Post = Omit<PostEntity, 'authorId'> & {
     author: { username: string };
@@ -30,8 +41,20 @@ export interface PostFilters {
 export class PostService {
     constructor(private prisma: PrismaService) {}
 
-    async create(post: CreatePost): Promise<void> {
-        await this.prisma.post.create({ data: post });
+    async create(post: PostCreateBody): Promise<void> {
+        console.warn(post);
+
+        await this.prisma.post.create({
+            data: {
+                ...omit(post, 'tags'),
+                tags: {
+                    connectOrCreate: post.tags.map((x) => ({
+                        create: x,
+                        where: { name: x.name }
+                    }))
+                }
+            }
+        });
     }
 
     /** Returns a random selection of posts */
@@ -66,7 +89,7 @@ export class PostService {
             take: limit ?? 10,
             skip: offset,
             where: this.buildPostWhere({ author, exclude, from }),
-            include: this.includePostWithUserUpvotes(userId)
+            include: this.buildPostInclude(userId)
         });
 
         return posts.map((post) => this.transformPost(post, userId));
@@ -75,7 +98,7 @@ export class PostService {
     async findOne(postId: number, userId?: number): Promise<Post> {
         const post = await this.prisma.post.findFirst({
             where: this.buildPostWhere({ id: postId }),
-            include: this.includePostWithUserUpvotes(userId)
+            include: this.buildPostInclude(userId)
         });
 
         if (!post) {
@@ -136,10 +159,11 @@ export class PostService {
         };
     }
 
-    private includePostWithUserUpvotes(userId?: number) {
+    private buildPostInclude(userId?: number) {
         return {
             author: { select: { username: true } },
             _count: { select: { upvotes: true } },
+            tags: true,
             ...(userId ? { upvotes: { where: { userId } } } : {})
         };
     }
@@ -148,7 +172,8 @@ export class PostService {
         post: PostEntity & {
             author: Pick<User, 'username'>;
             upvotes?: Upvote[];
-            _count: Prisma.PostCountOutputType;
+            tags: TagEntity[];
+            _count: { upvotes: number };
         },
         userId?: number
     ): Post {

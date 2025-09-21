@@ -2,12 +2,19 @@ model Post {
     id          Int      @id @default(autoincrement())
     authorId    Int
     title       String
-    description String
+    description String?
     imageId     String
-    tags        String[] @default([])
     createdAt   DateTime @default(now())
-    author      User     @relation(fields: [authorId], references: [id])
+    tags        Tag[]
     upvotes     Upvote[]
+    author      User     @relation(fields: [authorId], references: [id])
+}
+
+model Tag {
+    id       Int     @id @default(autoincrement())
+    name     String  @unique
+    category String?
+    posts    Post[]
 }
 
 model Upvote {
