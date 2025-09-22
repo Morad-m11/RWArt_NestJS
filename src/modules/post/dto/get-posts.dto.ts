@@ -1,4 +1,13 @@
-import { IsDate, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+    IsDate,
+    IsIn,
+    IsNumber,
+    IsOptional,
+    IsString,
+    ValidateNested
+} from 'class-validator';
+import { parseJSONString, TagDto } from './tag.dto';
 
 export type SortType = 'asc' | 'desc';
 
@@ -10,6 +19,11 @@ export class GetPostsDto {
     @IsString()
     @IsOptional()
     search?: string;
+
+    @Transform(({ value }) => parseJSONString(value))
+    @ValidateNested({ each: true })
+    @Type(() => TagDto)
+    tags?: TagDto[];
 
     @IsNumber()
     @IsOptional()

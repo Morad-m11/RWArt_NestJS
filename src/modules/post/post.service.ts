@@ -38,8 +38,6 @@ export class PostService {
     constructor(private prisma: PrismaService) {}
 
     async create(post: PostCreateBody): Promise<void> {
-        console.warn(post);
-
         await this.prisma.post.create({
             data: {
                 ...omit(post, 'tags'),
@@ -81,16 +79,19 @@ export class PostService {
         userId?: number
     ): Promise<{ posts: Post[]; totalCount: number }> {
         const { sort, limit, offset } = filters;
+        const orderBy = { createdAt: sort ?? 'desc' };
+        const where = this.buildPostWhere(filters);
+        const include = this.buildPostInclude(userId);
 
         const [posts, totalCount] = await this.prisma.$transaction([
             this.prisma.post.findMany({
-                orderBy: { createdAt: sort ?? 'desc' },
+                orderBy,
                 take: limit ?? 10,
                 skip: offset,
-                where: this.buildPostWhere(filters),
-                include: this.buildPostInclude(userId)
+                where,
+                include
             }),
-            this.prisma.post.count({ where: this.buildPostWhere(filters) })
+            this.prisma.post.count({ where })
         ]);
 
         return {
@@ -152,20 +153,30 @@ export class PostService {
     }
 
     private buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
-        const { author, exclude, from, search } = filters;
+        const { author, exclude, from, search, tags } = filters;
 
         return {
             ...(author ? { author: { username: author } } : {}),
             ...(exclude ? { id: { notIn: exclude } } : {}),
-            ...(from ? { createdAt: { gt: from } } : {}),
+            ...(from ? { createdAt: { gte: from } } : {}),
             ...(search
                 ? {
                       OR: [
-                          {
-                              title: { contains: search, mode: 'insensitive' },
-                              description: { contains: search, mode: 'insensitive' }
-                          }
+                          { title: { contains: search, mode: 'insensitive' } },
+                          { description: { contains: search, mode: 'insensitive' } }
                       ]
+                  }
+                : {}),
+            ...(tags?.length
+                ? {
+                      AND: tags.map((tag) => ({
+                          tags: {
+                              some: {
+                                  category: { equals: tag.category, mode: 'insensitive' },
+                                  name: { equals: tag.name, mode: 'insensitive' }
+                              }
+                          }
+                      }))
                   }
                 : {})
         };

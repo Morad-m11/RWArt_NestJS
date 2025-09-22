@@ -11,9 +11,9 @@ model Post {
 }
 
 model Tag {
-    id       Int     @id @default(autoincrement())
-    name     String  @unique
-    category String?
+    id       Int    @id @default(autoincrement())
+    name     String @unique
+    category String
     posts    Post[]
 }
 
