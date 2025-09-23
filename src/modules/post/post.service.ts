@@ -52,26 +52,27 @@ export class PostService {
     }
 
     /** Returns a random selection of posts */
-    async getFeatured(limit = 2, userId?: number): Promise<Post[]> {
-        const now = new Date();
-        const sevenDays = 7 * 24 * 60 * 60 * 1000;
-        const lastWeek = new Date(now.getTime() - sevenDays);
+    async getFeatured(limit = 3, userId?: number): Promise<Post[]> {
+        return (await this.findAll({ limit, sort: 'desc' }, userId)).posts;
+        // const now = new Date();
+        // const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        // const lastWeek = new Date(now.getTime() - sevenDays);
 
-        const { posts: lastWeekPosts } = await this.findAll({ from: lastWeek }, userId);
+        // const { posts: lastWeekPosts } = await this.findAll({ from: lastWeek }, userId);
 
-        if (lastWeekPosts.length < limit) {
-            const { posts: additionalPosts } = await this.findAll(
-                {
-                    exclude: lastWeekPosts.map((x) => x.id),
-                    limit: limit - lastWeekPosts.length
-                },
-                userId
-            );
+        // if (lastWeekPosts.length < limit) {
+        //     const { posts: additionalPosts } = await this.findAll(
+        //         {
+        //             exclude: lastWeekPosts.map((x) => x.id),
+        //             limit: limit - lastWeekPosts.length
+        //         },
+        //         userId
+        //     );
 
-            return [...lastWeekPosts, ...additionalPosts].sort(() => Math.random() - 0.5);
-        }
+        //     return [...lastWeekPosts, ...additionalPosts].sort(() => Math.random() - 0.5);
+        // }
 
-        return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, limit);
+        // return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, limit);
     }
 
     async findAll(

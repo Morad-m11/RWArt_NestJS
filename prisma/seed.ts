@@ -20,7 +20,13 @@ async function main() {
             },
             {
                 email: 'fakemail',
-                username: 'Angie',
+                username: 'lajiao',
+                passwordHash: await bcrypt.hash('guess', 10),
+                email_verified: true
+            },
+            {
+                email: 'fakemail2',
+                username: 'Div64',
                 passwordHash: await bcrypt.hash('guess', 10),
                 email_verified: true
             }
@@ -39,9 +45,11 @@ async function main() {
 
     await prisma.tag.createMany({
         data: [
-            { category: 'Type', name: 'Art' },
-            { category: 'Character', name: 'Survivor' },
-            { category: 'Style', name: 'Sketch' }
+            { category: 'type', name: 'Artwork' },
+            { category: 'type', name: 'Animation' },
+            { category: 'character', name: 'Slugcat' },
+            { category: 'style', name: 'Sketch' },
+            { category: 'style', name: 'Pixelart' }
         ]
     });
 
@@ -51,8 +59,38 @@ async function main() {
             title: 'Slugcat in a box',
             description: 'Do slugcats love boxes as much as regular cats do?',
             imageId: 'slugcat_box_ppgtse',
-            createdAt: new Date(Date.UTC(2025, 0, 30)),
-            tags: { connect: [{ id: 1 }, { id: 2 }, { id: 3 }] }
+            createdAt: new Date(Date.UTC(2025, 0, 23)),
+            tags: { connect: [{ id: 1 }, { id: 3 }, { id: 4 }] }
+        }
+    });
+
+    await prisma.post.create({
+        data: {
+            authorId: 3,
+            title: 'Good morning Rivulet',
+            imageId: 'RW_Rivulet_Bounce_iohqsg',
+            createdAt: new Date(Date.UTC(2025, 0, 22)),
+            tags: { connect: [{ id: 2 }, { id: 3 }, { id: 5 }] }
+        }
+    });
+
+    await prisma.post.create({
+        data: {
+            authorId: 4,
+            title: 'The Warper',
+            imageId: 'SlugPole_utxirf',
+            createdAt: new Date(Date.UTC(2025, 0, 21)),
+            tags: { connect: [{ id: 1 }, { id: 5 }] }
+        }
+    });
+
+    await prisma.post.create({
+        data: {
+            authorId: 4,
+            title: 'Always lurking',
+            imageId: 'Wotcher_rfxcb4',
+            createdAt: new Date(Date.UTC(2025, 0, 24)),
+            tags: { connect: [{ id: 1 }, { id: 5 }] }
         }
     });
 }
