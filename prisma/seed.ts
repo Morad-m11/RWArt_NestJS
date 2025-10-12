@@ -4,45 +4,57 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+    await createUsers();
+    await createTags();
+    await createPosts();
+}
+
+main()
+    .then(async () => {
+        await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+        console.error(e);
+        await prisma.$disconnect();
+        process.exit(1);
+    });
+
+async function createUsers() {
     await prisma.user.createMany({
         data: [
             {
                 email: 'john@prisma.io',
                 username: 'Johnny',
                 passwordHash: await bcrypt.hash('changeme', 10),
+                picture: 'survivor',
                 email_verified: true
             },
             {
                 email: 'maria@prisma.io',
                 username: 'Maria',
                 passwordHash: await bcrypt.hash('guess', 10),
+                picture: 'survivor',
                 email_verified: true
             },
             {
                 email: 'fakemail',
                 username: 'lajiao',
                 passwordHash: await bcrypt.hash('guess', 10),
+                picture: 'survivor',
                 email_verified: true
             },
             {
                 email: 'fakemail2',
                 username: 'Div64',
                 passwordHash: await bcrypt.hash('guess', 10),
+                picture: 'survivor',
                 email_verified: true
             }
         ]
     });
+}
 
-    await prisma.post.createMany({
-        data: Array.from({ length: 20 }, (_, i) => ({
-            authorId: (i % 3) + 1,
-            title: `Post Title ${i}`,
-            description: `Post Description ${i}`,
-            imageId: `cld-sample-${(i % 9) + 1}`,
-            createdAt: new Date(Date.UTC(2025, 0, i))
-        }))
-    });
-
+async function createTags() {
     await prisma.tag.createMany({
         data: [
             { category: 'type', name: 'Artwork' },
@@ -51,6 +63,18 @@ async function main() {
             { category: 'style', name: 'Sketch' },
             { category: 'style', name: 'Pixelart' }
         ]
+    });
+}
+
+async function createPosts() {
+    await prisma.post.createMany({
+        data: Array.from({ length: 20 }, (_, i) => ({
+            authorId: (i % 3) + 1,
+            title: `Post Title ${i}`,
+            description: `Post Description ${i}`,
+            imageId: `cld-sample-${(i % 9) + 1}`,
+            createdAt: new Date(Date.UTC(2025, 0, i))
+        }))
     });
 
     await prisma.post.create({
@@ -94,13 +118,3 @@ async function main() {
         }
     });
 }
-
-main()
-    .then(async () => {
-        await prisma.$disconnect();
-    })
-    .catch(async (e) => {
-        console.error(e);
-        await prisma.$disconnect();
-        process.exit(1);
-    });

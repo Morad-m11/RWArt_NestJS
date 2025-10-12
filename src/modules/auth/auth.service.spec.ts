@@ -113,7 +113,6 @@ describe('AuthService', () => {
             const ThirdPartyUser: JWTDecodedThirdParty = {
                 username: 'name',
                 email: 'mail',
-                picture: 'pic',
                 provider: 'Google',
                 providerUserId: 'GoogleUserID'
             };

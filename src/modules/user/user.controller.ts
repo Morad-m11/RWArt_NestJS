@@ -1,17 +1,22 @@
 import {
     BadRequestException,
+    Body,
     ConflictException,
     Controller,
     Get,
     NotFoundException,
     Param,
+    Patch,
     Query,
     UseGuards
 } from '@nestjs/common';
+import { minutes, Throttle } from '@nestjs/throttler';
 import { User as UserEntity } from '@prisma/client';
 import { User } from 'src/common/decorators/user.decorator';
 import { extract } from 'src/common/omit';
 import { OptionalJwtAuthGuard } from 'src/core/auth/anonymous/anonymous.guard';
+import { JwtAuthGuard } from 'src/core/auth/jwt/jwt.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
 
 type Profile = Pick<UserEntity, 'id' | 'email' | 'username' | 'picture' | 'createdAt'>;
@@ -67,5 +72,12 @@ export class UserController {
             ...extract(dbUser, 'username', 'picture', 'createdAt'),
             isSelf: false
         };
+    }
+
+    @Throttle({ long: { ttl: minutes(1), limit: 3 } })
+    @UseGuards(JwtAuthGuard)
+    @Patch(':id')
+    async update(@Param('id') id: number, @Body() user: UpdateUserDto) {
+        await this.userService.updateProfile(id, user);
     }
 }

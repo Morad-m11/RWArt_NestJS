@@ -2,7 +2,7 @@ model User {
     id             Int      @id @default(autoincrement())
     email          String   @unique
     username       String   @unique
-    picture        String?
+    picture        String
     passwordHash   String?
     email_verified Boolean  @default(false)
     createdAt      DateTime @default(now())

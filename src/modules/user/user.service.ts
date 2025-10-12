@@ -5,14 +5,27 @@ import { PrismaService } from 'src/common/prisma/service/prisma.service';
 
 const HASH_SALT = 10;
 
+const SLUG_CATS = [
+    'survivor',
+    'monk',
+    'hunter',
+    'gourmand',
+    'spearmaster',
+    'artificer',
+    'rivulet',
+    'saint'
+];
+
 type CreateArgs = Pick<User, 'email' | 'username'> & {
     password: string;
 };
 
-type CreateThirdPartyArgs = Pick<User, 'email' | 'username' | 'picture'> &
+type CreateThirdPartyArgs = Pick<User, 'email' | 'username'> &
     Pick<ThirdPartyAccount, 'provider' | 'providerUserId'>;
 
-type FindLocalFilters = Pick<Partial<User>, 'id' | 'email' | 'username'>;
+type UpdateArgs = Partial<Pick<User, 'username' | 'picture'>>;
+
+type FindLocalFilters = Partial<Pick<User, 'id' | 'email' | 'username'>>;
 
 @Injectable()
 export class UserService {
@@ -23,6 +36,7 @@ export class UserService {
             data: {
                 email: user.email,
                 username: user.username,
+                picture: this.randomPicture(),
                 passwordHash: await this.hashPassword(user.password)
             }
         });
@@ -33,7 +47,7 @@ export class UserService {
             data: {
                 email: user.email,
                 username: user.username,
-                picture: user.picture ?? null,
+                picture: this.randomPicture(),
                 thirdPartyAccount: {
                     create: {
                         provider: user.provider,
@@ -41,6 +55,13 @@ export class UserService {
                     }
                 }
             }
+        });
+    }
+
+    async updateProfile(id: User['id'], user: UpdateArgs): Promise<void> {
+        await this.prisma.user.update({
+            data: { username: user.username, picture: user.picture },
+            where: { id }
         });
     }
 
@@ -103,5 +124,9 @@ export class UserService {
 
     private async hashPassword(rawValue: string): Promise<string> {
         return await bcrypt.hash(rawValue, HASH_SALT);
+    }
+
+    private randomPicture(): string {
+        return SLUG_CATS[Math.floor(Math.random() * SLUG_CATS.length)];
     }
 }

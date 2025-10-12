@@ -10,8 +10,7 @@ export interface JWTDecodedThirdParty {
     provider: ThirdPartyProvider;
     providerUserId: string;
     email: string;
-    picture: string | null;
-    username?: string | undefined;
+    username?: string;
 }
 
 export type RequestWithThirdPartyJwt = Request & {
@@ -48,7 +47,6 @@ export class CustomGoogleStrategy extends PassportStrategy(Strategy, 'google') {
             provider: 'Google',
             providerUserId: googleUser.sub,
             email: googleUser.email,
-            picture: googleUser.picture ?? null,
             username
         };
     }

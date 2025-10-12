@@ -153,7 +153,6 @@ export class AuthService {
         return await this.userService.createThirdParty({
             email: user.email,
             username: user.username,
-            picture: user.picture,
             provider: user.provider,
             providerUserId: user.providerUserId
         });
