@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SITE_ORIGIN } from 'src/core/config/site-origin';
 import { provideValue } from '../test-provide';
@@ -8,7 +9,13 @@ describe('MailService', () => {
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            providers: [MailService, provideValue(SITE_ORIGIN, 'test origin')]
+            providers: [
+                MailService,
+                provideValue(SITE_ORIGIN, 'test origin'),
+                provideValue(ConfigService, {
+                    getOrThrow: jest.fn()
+                })
+            ]
         }).compile();
 
         service = module.get<MailService>(MailService);

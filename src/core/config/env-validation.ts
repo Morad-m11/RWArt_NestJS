@@ -20,7 +20,11 @@ export enum Config {
 
     CLOUD_NAME = 'CLOUD_NAME',
     API_KEY = 'API_KEY',
-    API_SECRET = 'API_SECRET'
+    API_SECRET = 'API_SECRET',
+
+    EMAIL_HOST = 'EMAIL_HOST',
+    EMAIL_USER = 'EMAIL_USER',
+    EMAIL_PASS = 'EMAIL_PASS'
 }
 
 export const ConfigValidationSchema = Joi.object({
@@ -40,5 +44,9 @@ export const ConfigValidationSchema = Joi.object({
 
     CLOUD_NAME: Joi.string().required(),
     API_KEY: Joi.string().required(),
-    API_SECRET: Joi.string().required()
+    API_SECRET: Joi.string().required(),
+
+    EMAIL_HOST: Joi.string().required(),
+    EMAIL_USER: Joi.string().required(),
+    EMAIL_PASS: Joi.string().required()
 });
