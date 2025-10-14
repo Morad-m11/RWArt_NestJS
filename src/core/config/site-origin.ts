@@ -9,7 +9,7 @@ export const provideSiteOrigin = (): Provider => {
         inject: [ConfigService],
         useFactory: (config: ConfigService) => {
             const isDevMode = config.getOrThrow('NODE_ENV') === 'development';
-            return isDevMode ? 'http://localhost:4200' : 'http://localhost:4200';
+            return isDevMode ? 'http://localhost:4200' : 'https://www.art-shelter.org';
         }
     };
 };
