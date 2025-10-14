@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfiguredConfigModule } from './core/config/config.module';
+import { ConfigValidationSchema } from './core/config/env-validation';
 import { ConfiguredLoggerModule } from './core/logging/logging.module';
 import {
     ConfiguredThrottlerModule,
@@ -15,7 +16,11 @@ import { UserModule } from './modules/user/user.module';
 
 @Module({
     imports: [
-        ConfiguredConfigModule,
+        ConfigModule.forRoot({
+            isGlobal: true,
+            validationSchema: ConfigValidationSchema,
+            validationOptions: { abortEarly: true }
+        }),
         ConfiguredLoggerModule,
         ConfiguredThrottlerModule,
         GlobalModule,
