@@ -6,7 +6,7 @@ export const ConfiguredJwtModule = JwtModule.registerAsync({
     inject: [ConfigService],
     useFactory: (config: ConfigService): JwtModuleOptions => {
         const secret = config.getOrThrow<string>('JWT_SECRET');
-        const expiresIn = config.getOrThrow<string>('JWT_EXP');
+        const expiresIn = config.getOrThrow<number>('JWT_EXP');
 
         return {
             secret,
