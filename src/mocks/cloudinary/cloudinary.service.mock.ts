@@ -8,7 +8,7 @@ export class CloudinaryServiceMock implements CloudinaryService {
 
     async uploadFile(_file: Express.Multer.File): Promise<UploadApiResponse> {
         return Promise.resolve({
-            public_id: (++this.id).toString()
+            public_id: `fakeId-${++this.id}`.toString()
         } as UploadApiResponse);
     }
 

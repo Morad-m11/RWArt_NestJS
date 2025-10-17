@@ -28,7 +28,9 @@ export enum Config {
 }
 
 export const ConfigValidationSchema = Joi.object({
-    NODE_ENV: Joi.string().valid('development', 'production').default('development'),
+    NODE_ENV: Joi.string()
+        .valid('development', 'staging', 'production')
+        .default('development'),
     PORT: Joi.number().port().default(3000),
     DATABASE_URL: Joi.string().required(),
 
