@@ -175,8 +175,8 @@ export class AuthController {
     setAuthCookie(res: Response, refreshToken: string) {
         res.cookie(REFRESH_TOKEN_KEY, refreshToken, {
             httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
+            sameSite: 'none',
+            secure: true,
             path: '/auth',
             maxAge: this._authCookieExpiry
         });
@@ -185,8 +185,8 @@ export class AuthController {
     clearAuthCookie(res: Response<any, Record<string, any>>) {
         res.clearCookie(REFRESH_TOKEN_KEY, {
             httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
+            sameSite: 'none',
+            secure: true,
             path: '/auth',
             maxAge: this._authCookieExpiry
         });
