@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma/service/prisma.service';
+import { PrismaModule } from 'src/common/prisma/prisma.module';
 import { AnonymousStrategy } from 'src/core/auth/anonymous/anonymous.strategy';
 import { FeedbackController } from './feedback.controller';
 import { FeedbackService } from './feedback.service';
 
 @Module({
+    imports: [PrismaModule],
     controllers: [FeedbackController],
-    providers: [FeedbackService, PrismaService, AnonymousStrategy]
+    providers: [FeedbackService, AnonymousStrategy]
 })
 export class FeedbackModule {}
