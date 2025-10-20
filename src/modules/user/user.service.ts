@@ -48,6 +48,7 @@ export class UserService {
                 email: user.email,
                 username: user.username,
                 picture: this.randomPicture(),
+                email_verified: true,
                 thirdPartyAccount: {
                     create: {
                         provider: user.provider,
