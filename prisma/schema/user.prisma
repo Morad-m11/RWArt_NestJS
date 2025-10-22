@@ -22,7 +22,7 @@ model ThirdPartyAccount {
     userId         Int    @unique
     provider       String
     providerUserId String
-    User           User   @relation(fields: [userId], references: [id])
+    User           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([provider, providerUserId])
 }
@@ -36,7 +36,7 @@ model RefreshToken {
     expiresAt     DateTime
     revokedAt     DateTime?
     revokedReason String?
-    user          User      @relation(fields: [userId], references: [id])
+    user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetToken {
@@ -45,7 +45,7 @@ model PasswordResetToken {
     tokenHash String   @unique
     createdAt DateTime @default(now())
     expiresAt DateTime
-    user      User     @relation(fields: [userId], references: [id])
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AccountVerificationToken {
@@ -54,5 +54,5 @@ model AccountVerificationToken {
     tokenHash String   @unique
     createdAt DateTime @default(now())
     expiresAt DateTime
-    user      User     @relation(fields: [userId], references: [id])
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
