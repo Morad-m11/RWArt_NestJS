@@ -9,9 +9,9 @@ const MailServiceOrMock = {
     provide: MailService,
     inject: [ConfigService, SITE_ORIGIN],
     useFactory: (config: ConfigService, siteOrigin: string) =>
-        config.getOrThrow(Config.NODE_ENV) === 'production'
-            ? new MailService(siteOrigin, config)
-            : new MailServiceMock(siteOrigin, config)
+        config.getOrThrow(Config.NODE_ENV) === 'development'
+            ? new MailServiceMock(siteOrigin, config)
+            : new MailService(siteOrigin, config)
 };
 
 @Module({

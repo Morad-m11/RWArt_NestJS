@@ -22,9 +22,9 @@ export enum Config {
     API_KEY = 'API_KEY',
     API_SECRET = 'API_SECRET',
 
-    EMAIL_HOST = 'EMAIL_HOST',
-    EMAIL_USER = 'EMAIL_USER',
-    EMAIL_PASS = 'EMAIL_PASS'
+    EMAIL_URL = 'EMAIL_URL',
+    EMAIL_SENDER = 'EMAIL_SENDER',
+    EMAIL_API_KEY = 'EMAIL_API_KEY'
 }
 
 export const ConfigValidationSchema = Joi.object({
@@ -48,7 +48,7 @@ export const ConfigValidationSchema = Joi.object({
     API_KEY: Joi.string().required(),
     API_SECRET: Joi.string().required(),
 
-    EMAIL_HOST: Joi.string().required(),
-    EMAIL_USER: Joi.string().required(),
-    EMAIL_PASS: Joi.string().required()
+    EMAIL_URL: Joi.string().required(),
+    EMAIL_SENDER: Joi.string().required(),
+    EMAIL_API_KEY: Joi.string().required()
 });

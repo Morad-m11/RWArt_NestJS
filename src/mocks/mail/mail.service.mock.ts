@@ -5,6 +5,8 @@ import { MailService } from 'src/common/mail/mail.service';
 @Injectable()
 export class MailServiceMock extends MailService {
     override async send(email: string, content: { subject: string; html: string }) {
+        this.logger.log('Sending fake mail');
+
         const testAccount = await mailer.createTestAccount();
 
         const transporter = mailer.createTransport({
