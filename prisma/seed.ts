@@ -47,7 +47,7 @@ async function createUsers() {
                 email: 'fakemail2',
                 username: 'Div64',
                 passwordHash: await bcrypt.hash('guess', 10),
-                picture: 'survivor',
+                picture: 'saint',
                 email_verified: true
             }
         ]

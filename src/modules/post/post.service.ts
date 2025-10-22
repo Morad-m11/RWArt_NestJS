@@ -185,7 +185,7 @@ export class PostService {
 
     private buildPostInclude(userId?: number): Prisma.PostInclude {
         return {
-            author: { select: { username: true } },
+            author: { select: { username: true, picture: true } },
             _count: { select: { upvotes: true } },
             tags: true,
             ...(userId ? { upvotes: { where: { userId } } } : {})
