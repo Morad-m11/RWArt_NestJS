@@ -2,7 +2,7 @@ export const verificationHTML = (url: string) => {
     return {
         subject: 'Verify your account',
         html: `
-        <h1>Welcome to RWArt!</h1>
+        <h1>Welcome to Art Shelter!</h1>
 
         <b>Here's your verification link.</b>
         <a href="${url}">Click me</a>
