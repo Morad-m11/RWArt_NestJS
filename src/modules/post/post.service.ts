@@ -154,9 +154,10 @@ export class PostService {
     }
 
     private buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
-        const { author, exclude, from, search, tags } = filters;
+        const { id, author, exclude, from, search, tags } = filters;
 
         return {
+            ...(id ? { id } : {}),
             ...(author ? { author: { username: author } } : {}),
             ...(exclude ? { id: { notIn: exclude } } : {}),
             ...(from ? { createdAt: { gte: from } } : {}),
