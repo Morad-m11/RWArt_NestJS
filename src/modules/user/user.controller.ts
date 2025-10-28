@@ -63,13 +63,21 @@ export class UserController {
         const isOwnProfile = userId && userId === dbUser.id;
         if (isOwnProfile) {
             return {
-                ...extract(dbUser, 'id', 'email', 'username', 'picture', 'createdAt'),
+                ...extract(
+                    dbUser,
+                    'id',
+                    'email',
+                    'username',
+                    'picture',
+                    'createdAt',
+                    'unclaimedUrl'
+                ),
                 isSelf: true
             };
         }
 
         return {
-            ...extract(dbUser, 'username', 'picture', 'createdAt'),
+            ...extract(dbUser, 'username', 'picture', 'createdAt', 'unclaimedUrl'),
             isSelf: false
         };
     }
