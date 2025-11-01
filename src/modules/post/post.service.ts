@@ -158,7 +158,9 @@ export class PostService {
 
         return {
             ...(id ? { id } : {}),
-            ...(author ? { author: { username: author } } : {}),
+            ...(author
+                ? { author: { username: { equals: author, mode: 'insensitive' } } }
+                : {}),
             ...(exclude ? { id: { notIn: exclude } } : {}),
             ...(from ? { createdAt: { gte: from } } : {}),
             ...(search
