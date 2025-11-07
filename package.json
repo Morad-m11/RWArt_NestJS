@@ -14,7 +14,8 @@
         "test": "jest",
         "test:watch": "jest --watch",
         "test:e2e": "jest --config ./test/jest-e2e.json",
-        "db:reset": "prisma migrate reset",
+        "db:reset:dev": "prisma migrate reset",
+        "db:apply-migrations": "prisma migrate deploy",
         "prepare": "node .husky/install.mjs"
     },
     "dependencies": {
@@ -32,6 +33,7 @@
         "class-validator": "^0.14.2",
         "cloudinary": "^2.7.0",
         "cookie-parser": "^1.4.7",
+        "dayjs": "^1.11.19",
         "google-auth-library": "^10.3.0",
         "joi": "^17.13.3",
         "nest-winston": "^1.10.2",

@@ -63,11 +63,8 @@ export class PostController {
     }
 
     @Get('featured')
-    async getFeatured(
-        @Query('limit') limit?: number,
-        @User('id') userId?: number
-    ): Promise<dbPost[]> {
-        return await this.postService.getFeatured(limit, userId);
+    async getFeatured(@User('id') userId?: number): Promise<dbPost[]> {
+        return await this.postService.getFeatured(userId);
     }
 
     @Get()
@@ -76,7 +73,7 @@ export class PostController {
         @Query() filters: GetPostsDto,
         @User('id') userId?: number
     ): Promise<dbPost[]> {
-        const { posts, totalCount } = await this.postService.findAll(filters, userId);
+        const { posts, totalCount } = await this.postService.findMany(filters, userId);
         res.setHeader('X-Total-Count', totalCount);
         return posts;
     }

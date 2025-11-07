@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ForbiddenException,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException
+} from '@nestjs/common';
 import {
     Post as PostEntity,
     Prisma,
@@ -6,6 +11,7 @@ import {
     Upvote,
     User
 } from '@prisma/client';
+import dayjs from 'dayjs';
 import { omit } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { GetPostsDto } from './dto/get-posts.dto';
@@ -30,8 +36,20 @@ export type Post = Omit<PostEntity, 'authorId'> & {
 
 type PostFilters = GetPostsDto & {
     id?: number;
-    exclude?: number[];
+    excludeIds?: number[];
 };
+
+type PostWithInteractions = PostEntity & {
+    author: Pick<User, 'username'>;
+    upvotes?: Upvote[];
+    tags: TagEntity[];
+    _count: {
+        upvotes: number;
+    };
+};
+
+const FEATURED_LIMIT = 5;
+const FEATURED_BLOCKED_DAYS = 3;
 
 @Injectable()
 export class PostService {
@@ -51,31 +69,27 @@ export class PostService {
         });
     }
 
-    /** Returns a random selection of posts */
-    async getFeatured(limit = 3, userId?: number): Promise<Post[]> {
-        return (await this.findAll({ limit, sort: 'desc' }, userId)).posts;
-        // const now = new Date();
-        // const sevenDays = 7 * 24 * 60 * 60 * 1000;
-        // const lastWeek = new Date(now.getTime() - sevenDays);
+    async getFeatured(userId?: number): Promise<Post[]> {
+        const startOfDay = dayjs().startOf('day').toDate();
 
-        // const { posts: lastWeekPosts } = await this.findAll({ from: lastWeek }, userId);
+        const featured = await this.prisma.featuredPost.findMany({
+            take: FEATURED_LIMIT,
+            where: { featuredAt: { gte: startOfDay } },
+            orderBy: { featuredAt: 'desc' },
+            select: { post: { include: this.buildPostInclude() } }
+        });
 
-        // if (lastWeekPosts.length < limit) {
-        //     const { posts: additionalPosts } = await this.findAll(
-        //         {
-        //             exclude: lastWeekPosts.map((x) => x.id),
-        //             limit: limit - lastWeekPosts.length
-        //         },
-        //         userId
-        //     );
+        if (featured.length) {
+            return this.transformPosts(
+                featured.map((x) => x.post),
+                userId
+            );
+        }
 
-        //     return [...lastWeekPosts, ...additionalPosts].sort(() => Math.random() - 0.5);
-        // }
-
-        // return lastWeekPosts.sort(() => Math.random() - 0.5).slice(0, limit);
+        return await this.createNotRecentlyFeaturedPosts(userId);
     }
 
-    async findAll(
+    async findMany(
         filters: PostFilters,
         userId?: number
     ): Promise<{ posts: Post[]; totalCount: number }> {
@@ -96,7 +110,7 @@ export class PostService {
         ]);
 
         return {
-            posts: posts.map((post) => this.transformPost(post, userId)),
+            posts: this.transformPosts(posts, userId),
             totalCount
         };
     }
@@ -111,11 +125,11 @@ export class PostService {
             throw new NotFoundException(`Post with id ${postId} not found`);
         }
 
-        return this.transformPost(post);
+        return this.transformPosts([post])[0];
     }
 
-    update(id: number, _updatePostDto: UpdatePostDto) {
-        return `This action updates a #${id} post`;
+    async update(id: number, _updatePostDto: UpdatePostDto) {
+        throw new InternalServerErrorException('Method not implemented');
     }
 
     async remove(postId: number, userId: number): Promise<PostEntity> {
@@ -145,6 +159,33 @@ export class PostService {
         return count > 0;
     }
 
+    private async createNotRecentlyFeaturedPosts(userId?: number) {
+        const xDaysAgo = dayjs()
+            .subtract(FEATURED_BLOCKED_DAYS, 'days')
+            .startOf('day')
+            .toDate();
+
+        const posts = await this.prisma.post.findMany({
+            where: {
+                featured: {
+                    none: {
+                        featuredAt: { gte: xDaysAgo }
+                    }
+                }
+            },
+            take: FEATURED_LIMIT,
+            orderBy: { createdAt: 'desc' },
+            include: this.buildPostInclude(userId)
+        });
+
+        await this.prisma.featuredPost.createMany({
+            data: posts.map((post) => ({ postId: post.id })),
+            skipDuplicates: true
+        });
+
+        return this.transformPosts(posts, userId);
+    }
+
     private async isUpvoted(postId: number, userId: number): Promise<boolean> {
         const count = await this.prisma.upvote.count({
             where: { postId, userId }
@@ -153,15 +194,24 @@ export class PostService {
         return count > 0;
     }
 
+    private buildPostInclude(userId?: number): Prisma.PostInclude {
+        return {
+            author: { select: { username: true, picture: true } },
+            _count: { select: { upvotes: true } },
+            tags: true,
+            ...(userId ? { upvotes: { where: { userId } } } : {})
+        };
+    }
+
     private buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
-        const { id, author, exclude, from, search, tags } = filters;
+        const { id, author, excludeIds, from, search, tags } = filters;
 
         return {
             ...(id ? { id } : {}),
             ...(author
                 ? { author: { username: { equals: author, mode: 'insensitive' } } }
                 : {}),
-            ...(exclude ? { id: { notIn: exclude } } : {}),
+            ...(excludeIds ? { id: { notIn: excludeIds } } : {}),
             ...(from ? { createdAt: { gte: from } } : {}),
             ...(search
                 ? {
@@ -186,29 +236,12 @@ export class PostService {
         };
     }
 
-    private buildPostInclude(userId?: number): Prisma.PostInclude {
-        return {
-            author: { select: { username: true, picture: true } },
-            _count: { select: { upvotes: true } },
-            tags: true,
-            ...(userId ? { upvotes: { where: { userId } } } : {})
-        };
-    }
-
-    private transformPost(
-        post: PostEntity & {
-            author: Pick<User, 'username'>;
-            upvotes?: Upvote[];
-            tags: TagEntity[];
-            _count: { upvotes: number };
-        },
-        userId?: number
-    ): Post {
-        return {
+    private transformPosts(posts: PostWithInteractions[], userId?: number): Post[] {
+        return posts.map((post) => ({
             ...omit(post, 'authorId', '_count', 'upvotes'),
             upvoteCount: post._count.upvotes,
             isUpvoted: !!post.upvotes?.length,
             isOwner: post.authorId === userId
-        };
+        }));
     }
 }

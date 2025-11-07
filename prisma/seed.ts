@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();
 
@@ -7,6 +8,7 @@ async function main() {
     await createUsers();
     await createTags();
     await createPosts();
+    await createFeaturedPosts();
 }
 
 main()
@@ -116,5 +118,18 @@ async function createPosts() {
             createdAt: new Date(Date.UTC(2025, 0, 24)),
             tags: { connect: [{ id: 1 }, { id: 5 }] }
         }
+    });
+}
+
+async function createFeaturedPosts() {
+    const yesterday = dayjs().subtract(1, 'day').toDate();
+
+    const posts = await prisma.post.findMany({ orderBy: { createdAt: 'desc' }, take: 5 });
+
+    await prisma.featuredPost.createMany({
+        data: posts.map((x) => ({
+            postId: x.id,
+            featuredAt: yesterday
+        }))
     });
 }

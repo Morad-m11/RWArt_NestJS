@@ -22,7 +22,8 @@ const USER: User = {
     passwordHash: 'hash',
     email_verified: true,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
+    unclaimedUrl: null
 };
 
 describe('AuthService', () => {
