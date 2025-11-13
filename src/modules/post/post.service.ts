@@ -12,7 +12,7 @@ import {
     User
 } from '@prisma/client';
 import dayjs from 'dayjs';
-import { omit } from 'src/common/omit';
+import { omit, optional } from 'src/common/omit';
 import { PrismaService } from 'src/common/prisma/service/prisma.service';
 import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -72,16 +72,16 @@ export class PostService {
     async getFeatured(userId?: number): Promise<Post[]> {
         const startOfDay = dayjs().startOf('day').toDate();
 
-        const featured = await this.prisma.featuredPost.findMany({
+        const featuredToday = await this.prisma.featuredPost.findMany({
             take: FEATURED_LIMIT,
             where: { featuredAt: { gte: startOfDay } },
             orderBy: { featuredAt: 'desc' },
-            select: { post: { include: this.buildPostInclude() } }
+            select: { post: { include: this.buildPostInclude(userId) } }
         });
 
-        if (featured.length) {
+        if (featuredToday.length) {
             return this.transformPosts(
-                featured.map((x) => x.post),
+                featuredToday.map((x) => x.post),
                 userId
             );
         }
@@ -125,10 +125,10 @@ export class PostService {
             throw new NotFoundException(`Post with id ${postId} not found`);
         }
 
-        return this.transformPosts([post])[0];
+        return this.transformPosts([post], userId)[0];
     }
 
-    async update(id: number, _updatePostDto: UpdatePostDto) {
+    async update(_id: number, _updatePostDto: UpdatePostDto) {
         throw new InternalServerErrorException('Method not implemented');
     }
 
@@ -194,12 +194,12 @@ export class PostService {
         return count > 0;
     }
 
-    private buildPostInclude(userId?: number): Prisma.PostInclude {
+    private buildPostInclude(userId: number | undefined): Prisma.PostInclude {
         return {
             author: { select: { username: true, picture: true } },
             _count: { select: { upvotes: true } },
             tags: true,
-            ...(userId ? { upvotes: { where: { userId } } } : {})
+            ...optional(userId, { upvotes: { where: { userId } } })
         };
     }
 
@@ -207,32 +207,28 @@ export class PostService {
         const { id, author, excludeIds, from, search, tags } = filters;
 
         return {
-            ...(id ? { id } : {}),
-            ...(author
-                ? { author: { username: { equals: author, mode: 'insensitive' } } }
-                : {}),
-            ...(excludeIds ? { id: { notIn: excludeIds } } : {}),
-            ...(from ? { createdAt: { gte: from } } : {}),
-            ...(search
-                ? {
-                      OR: [
-                          { title: { contains: search, mode: 'insensitive' } },
-                          { description: { contains: search, mode: 'insensitive' } }
-                      ]
-                  }
-                : {}),
-            ...(tags?.length
-                ? {
-                      AND: tags.map((tag) => ({
-                          tags: {
-                              some: {
-                                  category: { equals: tag.category, mode: 'insensitive' },
-                                  name: { equals: tag.name, mode: 'insensitive' }
-                              }
-                          }
-                      }))
-                  }
-                : {})
+            ...optional(id, { id }),
+            ...optional(author, {
+                author: { username: { equals: author, mode: 'insensitive' } }
+            }),
+            ...optional(excludeIds, { id: { notIn: excludeIds } }),
+            ...optional(from, { createdAt: { gte: from } }),
+            ...optional(search, {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { description: { contains: search, mode: 'insensitive' } }
+                ]
+            }),
+            ...optional(tags?.length, {
+                AND: tags?.map((tag) => ({
+                    tags: {
+                        some: {
+                            category: { equals: tag.category, mode: 'insensitive' },
+                            name: { equals: tag.name, mode: 'insensitive' }
+                        }
+                    }
+                }))
+            })
         };
     }
 

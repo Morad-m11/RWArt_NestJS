@@ -25,3 +25,14 @@ export const extract = <T extends object, K extends keyof T>(
         Object.entries(obj).filter(([key]) => keys.includes(key as K))
     ) as Pick<T, K>;
 };
+
+export const optional = <T extends Record<string, unknown>>(
+    assertion: unknown,
+    obj: T
+): T | undefined => {
+    if (assertion) {
+        return obj;
+    }
+
+    return undefined;
+};
