@@ -1,6 +1,6 @@
-import { Transform, Type } from 'class-transformer';
-import { IsNotEmpty, IsString, MaxLength, ValidateNested } from 'class-validator';
-import { parseJSONString, TagDto } from './tag.dto';
+import { Transform } from 'class-transformer';
+import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { parseJSONString } from './parse-json-string';
 
 export class CreatePostDto {
     @IsString()
@@ -12,8 +12,9 @@ export class CreatePostDto {
     @MaxLength(200)
     description!: string;
 
+    @IsOptional()
     @Transform(({ value }) => parseJSONString(value))
-    @ValidateNested({ each: true })
-    @Type(() => TagDto)
-    tags!: TagDto[];
+    @IsArray()
+    @IsString({ each: true })
+    tags?: string[];
 }

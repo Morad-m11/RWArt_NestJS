@@ -59,7 +59,13 @@ export class PostController {
             throw new BadGatewayException('Image upload failed', { cause: error });
         });
 
-        await this.postService.create({ ...post, authorId, imageId });
+        await this.postService.create({
+            title: post.title,
+            description: post.description,
+            authorId,
+            imageId,
+            tags: post.tags?.map((x) => ({ name: x })) ?? []
+        });
     }
 
     @Get('featured')

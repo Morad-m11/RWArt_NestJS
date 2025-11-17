@@ -27,10 +27,9 @@ model FeaturedPost {
 }
 
 model Tag {
-    id       Int    @id @default(autoincrement())
-    name     String @unique
-    category String
-    posts    Post[]
+    id    Int    @id @default(autoincrement())
+    name  String @unique
+    posts Post[]
 }
 
 model Upvote {

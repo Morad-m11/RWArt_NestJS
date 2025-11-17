@@ -18,17 +18,20 @@ import { GetPostsDto } from './dto/get-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 type PostCreateBody = Prisma.PostGetPayload<{
-    omit: {
-        id: true;
-        createdAt: true;
-    };
-    include: {
-        tags: { omit: { id: true } };
+    select: {
+        title: true;
+        description: true;
+        authorId: true;
+        imageId: true;
+        tags: {
+            select: { name: true };
+        };
     };
 }>;
 
-export type Post = Omit<PostEntity, 'authorId'> & {
+export type Post = Omit<PostEntity, 'authorId' | 'tags'> & {
     author: { username: string };
+    tags: string[];
     upvoteCount: number;
     isOwner: boolean;
     isUpvoted: boolean;
@@ -58,7 +61,7 @@ export class PostService {
     async create(post: PostCreateBody): Promise<void> {
         await this.prisma.post.create({
             data: {
-                ...omit(post, 'tags'),
+                ...post,
                 upvotes: {
                     create: { userId: post.authorId }
                 },
@@ -201,13 +204,15 @@ export class PostService {
         return {
             author: { select: { username: true, picture: true } },
             _count: { select: { upvotes: true } },
-            tags: true,
+            tags: { select: { name: true } },
             ...optional(userId, { upvotes: { where: { userId } } })
         };
     }
 
     private buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
         const { id, author, excludeIds, from, search, tags } = filters;
+
+        console.warn(tags);
 
         return {
             ...optional(id, { id }),
@@ -226,8 +231,7 @@ export class PostService {
                 AND: tags?.map((tag) => ({
                     tags: {
                         some: {
-                            category: { equals: tag.category, mode: 'insensitive' },
-                            name: { equals: tag.name, mode: 'insensitive' }
+                            name: { equals: tag, mode: 'insensitive' }
                         }
                     }
                 }))
@@ -237,7 +241,8 @@ export class PostService {
 
     private transformPosts(posts: PostWithInteractions[], userId?: number): Post[] {
         return posts.map((post) => ({
-            ...omit(post, 'authorId', '_count', 'upvotes'),
+            ...omit(post, 'authorId', '_count', 'upvotes', 'tags'),
+            tags: post.tags.map((x) => x.name),
             upvoteCount: post._count.upvotes,
             isUpvoted: !!post.upvotes?.length,
             isOwner: post.authorId === userId

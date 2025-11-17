@@ -1,13 +1,5 @@
-import { Transform, Type } from 'class-transformer';
-import {
-    IsDate,
-    IsIn,
-    IsNumber,
-    IsOptional,
-    IsString,
-    ValidateNested
-} from 'class-validator';
-import { parseJSONString, TagDto } from './tag.dto';
+import { Transform } from 'class-transformer';
+import { IsArray, IsDate, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export type SortType = 'asc' | 'desc';
 
@@ -20,10 +12,11 @@ export class GetPostsDto {
     @IsOptional()
     search?: string;
 
-    @Transform(({ value }) => parseJSONString(value))
-    @ValidateNested({ each: true })
-    @Type(() => TagDto)
-    tags?: TagDto[];
+    @IsOptional()
+    @Transform(({ value }) => coerceArray(value))
+    @IsArray()
+    @IsString({ each: true })
+    tags?: string[];
 
     @IsNumber()
     @IsOptional()
@@ -41,3 +34,7 @@ export class GetPostsDto {
     @IsOptional()
     from?: Date;
 }
+
+const coerceArray = (value: unknown) => {
+    return Array.isArray(value) ? value : [value];
+};
