@@ -59,6 +59,9 @@ export class PostService {
         await this.prisma.post.create({
             data: {
                 ...omit(post, 'tags'),
+                upvotes: {
+                    create: { userId: post.authorId }
+                },
                 tags: {
                     connectOrCreate: post.tags.map((x) => ({
                         create: x,

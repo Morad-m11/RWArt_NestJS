@@ -20,7 +20,7 @@ model FeaturedPost {
     postId     Int
     featuredAt DateTime @default(now())
 
-    post Post @relation(fields: [postId], references: [id])
+    post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
     @@unique([postId, featuredAt])
     @@index([featuredAt])

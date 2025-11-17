@@ -15,6 +15,7 @@
         "test:watch": "jest --watch",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "db:reset:dev": "prisma migrate reset",
+        "db:create-migration": "prisma migrate dev",
         "db:deploy": "prisma migrate deploy && prisma generate",
         "prepare": "node .husky/install.mjs"
     },
