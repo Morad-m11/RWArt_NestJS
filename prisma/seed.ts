@@ -59,11 +59,11 @@ async function createUsers() {
 async function createTags() {
     await prisma.tag.createMany({
         data: [
-            { category: 'type', name: 'Artwork' },
-            { category: 'type', name: 'Animation' },
-            { category: 'character', name: 'Slugcat' },
-            { category: 'style', name: 'Sketch' },
-            { category: 'style', name: 'Pixelart' }
+            { name: 'Artwork' },
+            { name: 'Animation' },
+            { name: 'Slugcat' },
+            { name: 'Sketch' },
+            { name: 'Pixelart' }
         ]
     });
 }
